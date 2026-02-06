@@ -1,13 +1,13 @@
 from json import JSONDecodeError
-from typing import Any, Callable, IO, Coroutine, Literal
+from typing import Callable, IO, Coroutine, Literal
 import time
 import base64
 import json
 import re
 from uuid import uuid8
 
-from aioitd.api.exceptions import *
-from aioitd.api.models import *
+from aioitd.exceptions import *
+from aioitd.models import *
 
 import httpx
 
