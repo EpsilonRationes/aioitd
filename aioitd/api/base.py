@@ -1,11 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from functools import wraps
 from json import JSONDecodeError
-from typing import Any, Callable, Awaitable
+from typing import Any, Callable, Awaitable, IO, Coroutine
 import time
 import base64
 import json
 import re
+from uuid import UUID
 
 import httpx
 
@@ -86,6 +88,11 @@ class SomePasswordError(ValueError):
         return "Новый пароль должен отличать от старого"
 
 
+class FileNotFound(ValueError):
+    def __str__(self):
+        return f"Файл не найден, или нет прав доступа к нему"
+
+
 def verify_password(password: str) -> bool:
     """Проверить пароль. От 8 до 100 символов, содержит хотя бы одну букву, содержит хотя бы оду цифру."""
     return 8 <= len(password) <= 100 and re.match(r"[a-zA-Z]", password) and re.match(r"\d", password)
@@ -110,6 +117,38 @@ class Pagination:
         )
 
 
+@dataclass
+class File:
+    """Файл ИТД.
+
+    Attributes:
+        id: UUID файла
+        filename: имя файла
+        url: адрес файла
+        mime_type: mime тип (https://developer.mozilla.org/ru/docs/Web/HTTP/Guides/MIME_types)
+        size: размер файла в байтах
+        created_at: время загрузки
+    """
+    id: UUID
+    filename: str
+    url: str
+    mime_type: str
+    size: int
+    created_at: datetime = field(default_factory=datetime.now)
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> File:
+        return File(
+            id=UUID(data['id']),
+            filename=data['filename'],
+            url=data['url'],
+            mime_type=data['mimeType'],
+            size=data['size'],
+            created_at=datetime.fromisoformat(data['createdAt'].replace('Z', '+00:00')) if data.get('createdAt')
+            else datetime.now()
+        )
+
+
 class ITDClient:
     """
     Attributes:
@@ -127,7 +166,7 @@ class ITDClient:
             raise ValueError("refresh токен не может быть пустой строкой")
         self.refresh_token = refresh_token
         self.domain = domain
-        self.access_token = ""
+        self.access_token = "." + base64.urlsafe_b64encode(b'{"exp": 0}').decode("utf-8")
         self.check_access_token_expired = check_access_token_expired
         self.refresh_on_unauthorized = refresh_on_unauthorized
         self.session = httpx.AsyncClient()
@@ -142,9 +181,8 @@ class ITDClient:
     async def close(self) -> None:
         await self.session.aclose()
 
-    @staticmethod
-    async def refresh_on_token_expired(func: Callable[..., Awaitable]) -> Callable[..., Awaitable]:
-        @wraps
+
+    def refresh_on_token_expired(func: Callable[..., Coroutine]) -> Callable[..., Coroutine]:
         async def wrapper(self: ITDClient, *args, **kwargs):
             if self.check_access_token_expired:
                 if is_token_expired(self.access_token):
@@ -160,8 +198,22 @@ class ITDClient:
 
         return wrapper
 
-    @refresh_on_token_expired
-    async def _request(self, method, url: str, **kwargs) -> httpx.Response:
+    async def _unauthorized_wrapper(self, method: Callable[..., Coroutine], url: str, **kwargs) -> httpx.Response:
+        if self.check_access_token_expired:
+            if is_token_expired(self.access_token):
+                await self.refresh()
+
+        if self.refresh_on_unauthorized:
+            try:
+                return await self._request(method, url, **kwargs)
+            except UnauthorizedError:
+                await self.refresh()
+                return await self._request(method, url, **kwargs)
+        else:
+            return await self._request(method, url, **kwargs)
+
+
+    async def _request(self, method: Callable[..., Coroutine], url: str, **kwargs) -> httpx.Response:
         result = await method(
             f"https://{self.domain}/{url}",
             headers={"authorization": add_bearer(self.access_token)},
@@ -189,6 +241,8 @@ class ITDClient:
                     raise TokenNotFoundError(self.refresh_token)
                 if error['code'] == "REFRESH_TOKEN_MISSING":
                     raise MissingTokenError
+                if error['code'] == 'NOT_FOUND':
+                    raise NotFoundError
                 else:
                     raise ITDError(code=data['error']['code'], message=data["code"]["message"])
         except JSONDecodeError:
@@ -197,14 +251,14 @@ class ITDClient:
         return result
 
     async def get(self, url: str, params: dict | None = None) -> httpx.Response:
-        return await self._request(self.session.get, url, params=params)
+        return await self._unauthorized_wrapper(self.session.get, url, params=params)
 
     async def post(self, url: str, json: Any | None = None, params: dict | None = None,
-                   cookies: dict | None = None) -> httpx.Response:
-        return await self._request(self.session.post, url, json=json, params=params, cookies=cookies)
+                   cookies: dict | None = None, files: dict | None = None) -> httpx.Response:
+        return await self._unauthorized_wrapper(self.session.post, url, json=json, params=params, cookies=cookies, files=files)
 
     async def delete(self, url: str, json: Any | None = None, params: dict | None = None) -> httpx.Response:
-        return await self._request(self.session.post, url, json=json, params=params)
+        return await self._unauthorized_wrapper(self.session.post, url, json=json, params=params)
 
     async def change_password(
             self,
@@ -226,17 +280,11 @@ class ITDClient:
         if not verify_password(new_password):
             raise InvalidPasswordError
 
-        await self.post(
-            "api/v1/auth/change-password",
-            {"oldPassword": old_password, "newPassword": new_password}
-        )
+        await self.post("api/v1/auth/change-password", {"oldPassword": old_password, "newPassword": new_password})
 
     async def logout(self) -> None:
         """Выйти из аккаунта, отозвать токен. Работает при любом токене. Просроченном, не существующем и пустой строкой тоже."""
-        await self.post(
-            "https://xn--d1ah4a.com/api/v1/auth/logout",
-            cookies={"refresh_token": self.refresh_token}
-        )
+        await self.post("https://xn--d1ah4a.com/api/v1/auth/logout", cookies={"refresh_token": self.refresh_token})
 
     async def refresh(self) -> str:
         """Получить access_token.
@@ -251,9 +299,54 @@ class ITDClient:
         if len(self.refresh_token) == 0:
             raise MissingTokenError
 
-        result = await self.post(
+        result = await self._request(
+            self.session.post,
             "api/v1/auth/refresh",
             cookies={"refresh_token": self.refresh_token}
         )
         self.access_token = result.json()["accessToken"]
         return self.access_token
+
+    async def upload_file(self, file: IO[bytes]) -> File:
+        """Загрузить файл.
+
+        Args:
+            file: файл
+
+        Raises:
+            UnauthorizedError: неверный access токен
+        """
+        result = await self.post("api/files/upload", files={'file': file})
+        return File.from_json(result.json())
+
+    async def get_file(self, file_id: UUID | str) -> File:
+        """Получить файл.
+
+        Args:
+            file_id: UUID файла
+
+        Raises:
+            UnauthorizedError: неверный access токен
+        """
+        if isinstance(file_id, str):
+            file_id = UUID(file_id)
+        result = await self.get(f"api/files/{file_id}")
+        return File.from_json(result.json())
+
+
+    async def delete_file(self, file_id: UUID | str):
+        """Удалить файл
+
+        Args:
+            file_id: UUID файла
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            FileNotFoundError: Файл не найден, или нет прав доступа к нему
+        """
+        if isinstance(file_id, str):
+            file_id = UUID(file_id)
+        try:
+            await self.delete(f"api/files/{file_id}")
+        except NotFoundError:
+            raise FileNotFoundError
