@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import wraps
 from json import JSONDecodeError
-from typing import Any, Callable, Awaitable, IO, Coroutine
+from typing import Any, Callable, IO, Coroutine
 import time
 import base64
 import json
@@ -32,6 +31,11 @@ def add_bearer(token: str):
         return "Bearer " + token.strip()
     else:
         return token
+
+
+def validate_limit(limit: int):
+    if not (1 <= limit <= 50):
+        raise ValueError("limit должен быть больше от 1 до 50")
 
 
 class TokenNotFoundError(ValueError):
@@ -149,6 +153,44 @@ class File:
         )
 
 
+@dataclass
+class HashTag:
+    """Хештег.
+
+    Attributes:
+        id: UUID хештега
+        name: текст хештега
+        posts_count: количество хештегов
+    """
+    id: UUID
+    name: str
+    posts_count: int
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> HashTag:
+        return HashTag(
+            id=UUID(data["id"]),
+            name=data["name"],
+            posts_count=data["postsCount"]
+        )
+
+@dataclass
+class HashtagsPagination(Pagination):
+    """Пагинация постов при поиске по хештегу
+
+    Attributes:
+        next_cursor: UUID последнего поста на странице
+    """
+    next_cursor: UUID
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> HashtagsPagination:
+        pagination = super().from_json(data)
+        return HashtagsPagination(
+            **pagination.__dict__,
+            next_cursor=UUID(data["nextCursor"])
+        )
+
 class ITDClient:
     """
     Attributes:
@@ -222,6 +264,8 @@ class ITDClient:
 
         if result.text == "UNAUTHORIZED":
             raise UnauthorizedError
+        if result.text == "NOT_FOUND":
+            raise NotFoundError
 
         try:
             data = result.json()
@@ -350,3 +394,85 @@ class ITDClient:
             await self.delete(f"api/files/{file_id}")
         except NotFoundError:
             raise FileNotFoundError
+
+
+    async def get_trending_hashtags(self, limit: int = 10) -> list[HashTag]:
+        """Получить популярные хештеги.
+
+        Args:
+            limit: максимальное количество выданных хештегов
+
+        Raises:
+            UnauthorizedError: неверный access токен
+        """
+        validate_limit(limit)
+        result = await self.get("api/hashtags/trending", params={"limit": limit})
+        data = result.json()["data"]
+        hashtags = []
+        for hashtag in data["hashtags"]:
+            hashtags.append(HashTag.from_json(hashtag))
+
+        return hashtags
+
+    async def search_hashtags(self, query: str, limit: int = 20) -> list[
+        HashTag]:
+        """Найти хештеги.
+
+        Args:
+            query: текст запроса
+            limit: максимальное количество выданных хештегов
+
+        Raises:
+            UnauthorizedError: неверный access токен
+        """
+        validate_limit(limit)
+        result = await self.get(f"api/hashtags", params={"q": query, "limit": limit})
+        data = result.json()["data"]
+
+        hashtags = []
+        for hashtag in data["hashtags"]:
+            hashtags.append(HashTag.from_json(hashtag))
+
+        return hashtags
+
+    async def get_posts_by_hashtag(
+            self, hashtag_name: str, cursor: UUID | str | None = None,
+            limit: int = 20
+    ) -> tuple[HashTag, HashtagsPagination, list]:
+        """Посты по хештегу.
+
+        Args:
+            hashtag_name: текст хештега
+            cursor: UUID последнего поста на прошлой странице
+            limit: максимальное количество выданных постов
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Хештег не найден
+
+        """
+        validate_limit(limit)
+        if isinstance(cursor, str):
+            cursor = UUID(cursor)
+
+        try:
+            result = await self.get(
+                f"api/hashtags/{hashtag_name}/posts",
+                params={"limit": limit} | ({} if cursor is None else {"cursor": cursor})
+
+            )
+        except NotFoundError:
+            raise NotFoundError("NOT_FOUND",f"Хештег {hashtag_name} не найден")
+
+        data = result.json()["data"]
+        hashtag = data["hashtag"]
+        if hashtag is None:
+            raise NotFoundError("NOT_FOUND", f"Хештег {hashtag_name} не найден")
+        hashtag = HashTag.from_json(hashtag)
+
+        pagination = HashtagsPagination.from_json(data["pagination"])
+
+        # TODO преобразование в Post когда его напишу
+        posts = data["posts"]
+
+        return hashtag, pagination, posts
