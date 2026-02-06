@@ -1,12 +1,13 @@
-from dataclasses import dataclass, field
-from datetime import datetime
 from json import JSONDecodeError
-from typing import Any, Callable, IO, Coroutine
+from typing import Any, Callable, IO, Coroutine, Literal
 import time
 import base64
 import json
 import re
-from uuid import UUID
+from uuid import uuid8
+
+from aioitd.api.exceptions import *
+from aioitd.api.models import *
 
 import httpx
 
@@ -38,158 +39,14 @@ def validate_limit(limit: int):
         raise ValueError("limit должен быть больше от 1 до 50")
 
 
-class TokenNotFoundError(ValueError):
-    def __init__(self, token: str) -> None:
-        self.token = token
-
-    def __str__(self):
-        return f"Токена {self.token} не существует"
-
-
-class TokenRevokedError(ValueError):
-    def __init__(self, token: str) -> None:
-        self.token = token
-
-    def __str__(self) -> str:
-        return f"Токен {self.token} отозван"
-
-
-class MissingTokenError(ValueError):
-    def __str__(self) -> str:
-        return f"Токен не указан (равен пустой строке)"
-
-
-class ITDError(Exception):
-    def __init__(self, code: str, message: str):
-        self.message = message
-        self.code = code
-
-    def __str__(self):
-        return f"ITDError: code={self.code}, message={self.message}"
-
-
-class UnauthorizedError(ITDError):
-    def __str__(self):
-        return f"Не авторизован"
-
-
-class NotFoundError(ITDError):
-    ...
-
-
-class InvalidPasswordError(ValueError):
-    def __str__(self) -> str:
-        return "Пароль не подходит под условия"
-
-
-class InvalidOldPasswordError(ValueError):
-    def __str__(self) -> str:
-        return "Указан неверный старый пароль"
-
-
-class SomePasswordError(ValueError):
-    def __str__(self) -> str:
-        return "Новый пароль должен отличать от старого"
-
-
-class FileNotFound(ValueError):
-    def __str__(self):
-        return f"Файл не найден, или нет прав доступа к нему"
-
-
 def verify_password(password: str) -> bool:
     """Проверить пароль. От 8 до 100 символов, содержит хотя бы одну букву, содержит хотя бы оду цифру."""
     return 8 <= len(password) <= 100 and re.match(r"[a-zA-Z]", password) and re.match(r"\d", password)
 
 
-@dataclass
-class Pagination:
-    """Пагинация.
+def datetime_to_str(dt: datetime) -> str:
+    return dt.isoformat().replace('+00:00', 'Z')
 
-    Attributes:
-        has_more: есть ли следующая страница
-        limit: максимальное количество постов на одной странице
-    """
-    has_more: bool
-    limit: int
-
-    @classmethod
-    def from_json(cls, data: dict[str, Any]) -> Pagination:
-        return Pagination(
-            has_more=data["hasMore"],
-            limit=data["limit"]
-        )
-
-
-@dataclass
-class File:
-    """Файл ИТД.
-
-    Attributes:
-        id: UUID файла
-        filename: имя файла
-        url: адрес файла
-        mime_type: mime тип (https://developer.mozilla.org/ru/docs/Web/HTTP/Guides/MIME_types)
-        size: размер файла в байтах
-        created_at: время загрузки
-    """
-    id: UUID
-    filename: str
-    url: str
-    mime_type: str
-    size: int
-    created_at: datetime = field(default_factory=datetime.now)
-
-    @classmethod
-    def from_json(cls, data: dict[str, Any]) -> File:
-        return File(
-            id=UUID(data['id']),
-            filename=data['filename'],
-            url=data['url'],
-            mime_type=data['mimeType'],
-            size=data['size'],
-            created_at=datetime.fromisoformat(data['createdAt'].replace('Z', '+00:00')) if data.get('createdAt')
-            else datetime.now()
-        )
-
-
-@dataclass
-class HashTag:
-    """Хештег.
-
-    Attributes:
-        id: UUID хештега
-        name: текст хештега
-        posts_count: количество хештегов
-    """
-    id: UUID
-    name: str
-    posts_count: int
-
-    @classmethod
-    def from_json(cls, data: dict[str, Any]) -> HashTag:
-        return HashTag(
-            id=UUID(data["id"]),
-            name=data["name"],
-            posts_count=data["postsCount"]
-        )
-
-@dataclass
-class HashtagsPagination(Pagination):
-    """Пагинация постов при поиске по хештегу
-
-    Attributes:
-        next_cursor: UUID последнего поста на странице
-    """
-    next_cursor: UUID
-
-    @classmethod
-    def from_json(cls, data: dict[str, Any]) -> HashtagsPagination:
-        pagination = super().from_json(data)
-        return HashtagsPagination(
-            **pagination.__dict__,
-            next_cursor=UUID(data["nextCursor"])
-        )
 
 class ITDClient:
     """
@@ -213,6 +70,8 @@ class ITDClient:
         self.refresh_on_unauthorized = refresh_on_unauthorized
         self.session = httpx.AsyncClient()
 
+        self.id = uuid8()  # TODO вставлять сюда id пользователя
+
     async def __aenter__(self) -> ITDClient:
         await self.refresh()
         return self
@@ -222,7 +81,6 @@ class ITDClient:
 
     async def close(self) -> None:
         await self.session.aclose()
-
 
     def refresh_on_token_expired(func: Callable[..., Coroutine]) -> Callable[..., Coroutine]:
         async def wrapper(self: ITDClient, *args, **kwargs):
@@ -253,7 +111,6 @@ class ITDClient:
                 return await self._request(method, url, **kwargs)
         else:
             return await self._request(method, url, **kwargs)
-
 
     async def _request(self, method: Callable[..., Coroutine], url: str, **kwargs) -> httpx.Response:
         result = await method(
@@ -286,9 +143,15 @@ class ITDClient:
                 if error['code'] == "REFRESH_TOKEN_MISSING":
                     raise MissingTokenError
                 if error['code'] == 'NOT_FOUND':
-                    raise NotFoundError
+                    raise NotFoundError(error['message'])
+                if error['code'] == "FORBIDDEN":
+                    raise ForbiddenError(error['message'])
+                if error['code'] == "NOT_PINNED":
+                    raise NotPinedError
+                if error['code'] == "CONFLICT":
+                    raise ConflictError(error["message"])
                 else:
-                    raise ITDError(code=data['error']['code'], message=data["code"]["message"])
+                    raise ITDError(code=error['code'], message=error["message"])
         except JSONDecodeError:
             pass
 
@@ -299,10 +162,14 @@ class ITDClient:
 
     async def post(self, url: str, json: Any | None = None, params: dict | None = None,
                    cookies: dict | None = None, files: dict | None = None) -> httpx.Response:
-        return await self._unauthorized_wrapper(self.session.post, url, json=json, params=params, cookies=cookies, files=files)
+        return await self._unauthorized_wrapper(self.session.post, url, json=json, params=params, cookies=cookies,
+                                                files=files)
 
-    async def delete(self, url: str, json: Any | None = None, params: dict | None = None) -> httpx.Response:
-        return await self._unauthorized_wrapper(self.session.post, url, json=json, params=params)
+    async def delete(self, url: str, params: dict | None = None) -> httpx.Response:
+        return await self._unauthorized_wrapper(self.session.delete, url, params=params)
+
+    async def put(self, url: str, json: Any | None = None, params: dict | None = None) -> httpx.Response:
+        return await self._unauthorized_wrapper(self.session.put, url, json=json, params=params)
 
     async def change_password(
             self,
@@ -377,7 +244,6 @@ class ITDClient:
         result = await self.get(f"api/files/{file_id}")
         return File.from_json(result.json())
 
-
     async def delete_file(self, file_id: UUID | str):
         """Удалить файл
 
@@ -394,7 +260,6 @@ class ITDClient:
             await self.delete(f"api/files/{file_id}")
         except NotFoundError:
             raise FileNotFoundError
-
 
     async def get_trending_hashtags(self, limit: int = 10) -> list[HashTag]:
         """Получить популярные хештеги.
@@ -438,7 +303,7 @@ class ITDClient:
     async def get_posts_by_hashtag(
             self, hashtag_name: str, cursor: UUID | str | None = None,
             limit: int = 20
-    ) -> tuple[HashTag, HashtagsPagination, list]:
+    ) -> tuple[HashTag, HashtagsPagination, list[Post]]:
         """Посты по хештегу.
 
         Args:
@@ -462,7 +327,7 @@ class ITDClient:
 
             )
         except NotFoundError:
-            raise NotFoundError("NOT_FOUND",f"Хештег {hashtag_name} не найден")
+            raise NotFoundError("NOT_FOUND", f"Хештег {hashtag_name} не найден")
 
         data = result.json()["data"]
         hashtag = data["hashtag"]
@@ -472,7 +337,386 @@ class ITDClient:
 
         pagination = HashtagsPagination.from_json(data["pagination"])
 
-        # TODO преобразование в Post когда его напишу
-        posts = data["posts"]
+        posts = list(map(Post.from_json, data["posts"]))
 
         return hashtag, pagination, posts
+
+    async def get_popular_posts(
+            self, cursor: int | None = None, limit: int = 20
+    ) -> tuple[IntPagination, list[Post]]:
+        """Получить посты, лента.
+
+        Args:
+            cursor: Номер страницы
+            limit: максимальное количество постов на странице
+
+        Raises:
+            UnauthorizedError: неверный access токен
+        """
+        validate_limit(limit)
+
+        result = await self.get(
+            f"api/posts", params={"limit": limit, "tab": "popular"} | {} if cursor is None else {"cursor": cursor}
+        )
+        data = result.json()["data"]
+
+        pagination = IntPagination.from_json(data["pagination"])
+
+        posts = list(map(Post.from_json, data["posts"]))
+
+        return pagination, posts
+
+    async def get_following_posts(
+            self, cursor: datetime | None = None, limit: int = 20
+    ) -> tuple[TimePagination, list[Post]]:
+        """Посты подписок
+
+        Args:
+            cursor: Дата создания последнего поста на предыдущей странице
+            limit: максимальное количество постов на странице
+
+        Raises:
+            UnauthorizedError: неверный access токен
+        """
+        validate_limit(limit)
+
+        result = await self.get(
+            f"api/posts",
+            params={"limit": limit, "tab": "following"} | (
+                {} if cursor is None else {"cursor": datetime_to_str(cursor)})
+        )
+        data = result.json()["data"]
+
+        pagination = TimePagination.from_json(data["pagination"])
+
+        posts = list(map(Post.from_json, data["posts"]))
+
+        return pagination, posts
+
+    async def get_post(self, post_id: UUID | str) -> FullPost:
+        """Получить пост.
+
+        Args:
+            post_id: UUID поста
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        result = await self.get(f"api/posts/{post_id}")
+
+        return FullPost.from_json(result.json()["data"])
+
+    async def delete_post(self, post_id: UUID | str) -> None:
+        """Удалить пост.
+
+        Args:
+            post_id: UUID поста
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            ForbiddenError: Нет прав для удаления поста
+            NotFoundError: Пост не найден
+        """
+
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        await self.delete(f"api/posts/{post_id}")
+
+    async def restore_post(self, post_id: UUID | str) -> None:
+        """Восстановить пост.
+
+        Args:
+            post_id: UUID поста
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        await self.post(f"api/posts/{post_id}/restore")
+
+    async def like_post(self, post_id: UUID | str) -> int:
+        """Лайкнуть пост.
+
+        Args:
+            post_id: UUID поста
+
+        Returns: Количество лайков
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        result = await self.post(f"api/posts/{post_id}/like")
+        return result.json()["likesCount"]
+
+    async def delete_like_post(self, post_id: UUID | str) -> int:
+        """Убрать лайк с пост.
+
+        Args:
+            post_id: UUID поста
+
+        Returns: Количество лайков
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        result = await self.delete(f"api/posts/{post_id}/like")
+        return result.json()["likesCount"]
+
+    async def view_post(self, post_id: UUID | str) -> None:
+        """Просмотр на пост.
+
+        Args:
+            post_id: UUID поста
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        await self.post(f"api/posts/{post_id}/view")
+
+    async def pin_post(self, post_id: UUID | str) -> bool:
+        """Закрепить пост.
+
+        Args:
+            post_id: UUID поста
+
+        Returns: Успешна ли операция
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        result = await self.post(f"api/posts/{post_id}/pin")
+        return result.json()["success"]
+
+    async def unpin_post(self, post_id: UUID | str) -> bool:
+        """Открепить пост.
+
+        Args:
+            post_id: UUID поста
+
+        Returns: Успешна ли операция
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+            NotPinedError: Пост не прикреплён
+            ForbiddenError: Можно прикреплять только свои посты
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        result = await self.delete(f"api/posts/{post_id}/pin")
+        return result.json()["success"]
+
+    async def repost(self, post_id: UUID | str, content: str = "") -> Post:
+        """Репост.
+
+        Args:
+            post_id: UUID поста
+            content: текст репоста
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+            ConflictError: Нельзя репостнуть два раза
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        result = await self.post(f"api/posts/{post_id}/repost", json={"content": content})
+        data = result.json()
+        data["author"]["id"] = str(self.id)
+        return Post.from_json(data)
+
+    async def get_posts_by_user(
+            self, username: str, cursor: datetime | None = None, limit: int = 20, sort: Literal["new"] = "new"
+    ) -> tuple[TimePagination, list[Post]]:
+        """Посты на стене пользователя. Отсортированы по дате бупликации
+
+        Args:
+            username: имя пользователя
+            cursor: время публикации последнего поста на предыдущей странице
+            limit: максимальное количество выданных постов
+            sort: сортировка
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: пользователь не найден
+        """
+        validate_limit(limit)
+        result = await self.get(
+            f"api/posts/user/{username}",
+            params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_str(cursor)})
+        )
+        data = result.json()["data"]
+        pagination = TimePagination.from_json(data["pagination"])
+        posts = list(map(Post.from_json, data["posts"]))
+
+        return pagination, posts
+
+    async def get_posts_by_popular(
+            self, username: str, cursor: int | None = None, limit: int = 20, sort: Literal["popular"] = "popular"
+    ) -> tuple[IntPagination, list[Post]]:
+        """Посты на стене пользователя. Отсортированы по популярности.
+
+        Args:
+            username: имя пользователя
+            cursor: номер последнего поста на предыдущей странице
+            limit: максимальное количество выданных постов
+            sort: сортировка
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: пользователь не найден
+        """
+        validate_limit(limit)
+        result = await self.get(
+            f"api/posts/user/{username}",
+            params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": cursor})
+        )
+        print(result.json())
+        data = result.json()["data"]
+        pagination = IntPagination.from_json(data["pagination"])
+        posts = list(map(Post.from_json, data["posts"]))
+
+        return pagination, posts
+
+    async def get_posts_by_user_liked(
+            self, username: str, cursor: datetime | None = None, limit: int = 20
+    ) -> tuple[TimePagination, list[Post]]:
+        """Посты лайкнутые пользователем.
+
+        Args:
+            username: имя пользователя
+            cursor: время публикации последнего поста на предыдущей странице
+            limit: максимальное количество выданных постов
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: пользователь не найден
+        """
+        validate_limit(limit)
+        result = await self.get(
+            f"api/posts/user/{username}/liked",
+            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_str(cursor)})
+        )
+        data = result.json()["data"]
+        pagination = TimePagination.from_json(data["pagination"])
+        posts = list(map(Post.from_json, data["posts"]))
+
+        return pagination, posts
+
+    async def get_posts_by_user_wall(
+            self, username: str, cursor: datetime | None = None, limit: int = 20
+    ) -> tuple[TimePagination, list[Post]]:
+        """Посты на стене пользователя, сделанные не пользователем.
+
+        Args:
+            username: имя пользователя
+            cursor: время публикации последнего поста на предыдущей странице
+            limit: максимальное количество выданных постов
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: пользователь не найден
+        """
+        validate_limit(limit)
+        result = await self.get(
+            f"api/posts/user/{username}/wall",
+            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_str(cursor)})
+        )
+        data = result.json()["data"]
+        pagination = TimePagination.from_json(data["pagination"])
+        posts = list(map(Post.from_json, data["posts"]))
+
+        return pagination, posts
+
+    async def get_post_comments(
+            self,
+            post_id: UUID | str,
+            cursor: int | None = None,
+            sort: Literal["popular", "newest", "oldest"] = "popular",
+            limit: int = 20
+    ) -> tuple[CommentPagination, list[Comment]]:
+        """Получить комментарии под постом.
+
+        Args:
+            post_id: UUID поста
+            cursor: номер последнего комментария на предыдущей странице
+            sort: сортировать по
+            limit: максимальное количество комментариев на странице
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+        result = await self.get(
+            f"api/posts/{post_id}/comments",
+            params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": cursor})
+        )
+        data = result.json()["data"]
+        pagination = CommentPagination.from_json(data)
+        comments = list(map(Comment.from_json, data["comments"]))
+        return pagination, comments
+
+    async def create_post(self, content: str, attachment_ids: list[UUID | str]) -> Post:
+        """Создать пост.
+
+        Args:
+            content: Текст поста
+            attachment_ids: Прикреплённые файлы
+
+        Raises:
+            UnauthorizedError: неверный access токен
+        """
+        attachment_ids = list(map(lambda id: UUID(id) if isinstance(UUID, str) else id, attachment_ids))
+
+        result = await self.post("api/posts", {"content": content, "attachmentIds": attachment_ids})
+        data = result.json()
+        data["author"]["id"] = str(self.id)
+        return Post.from_json(data)
+
+    async def update_post(self, post_id: UUID | str, content: str) -> str:
+        """Изменить пост
+
+        Args:
+            post_id: UUID поста
+            content: Новый текст поста
+
+        Returns: Новое содержимое поста
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+
+        result = await self.put(f"api/posts/{post_id}", {"content": content})
+        data = result.json()
+
+        return data["content"]
