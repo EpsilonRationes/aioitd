@@ -1,11 +1,9 @@
-from collections import namedtuple
 from json import JSONDecodeError
 from typing import Callable, IO, Coroutine, Literal, NamedTuple
 import time
 import base64
 import json
 import re
-from uuid import uuid8
 
 from aioitd.exceptions import *
 from aioitd.models import *
@@ -71,11 +69,14 @@ class ITDClient:
         self.refresh_on_unauthorized = refresh_on_unauthorized
         self.session = httpx.AsyncClient()
 
-        self.id = uuid8()  # TODO вставлять сюда id пользователя
-
     async def __aenter__(self) -> ITDClient:
-        await self.refresh()
+        await self.start()
         return self
+
+    async def start(self):
+        await self.refresh()
+        self.me = await self.get_me()
+        self.id = self.me.id
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await self.close()
