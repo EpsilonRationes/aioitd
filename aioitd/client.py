@@ -1095,3 +1095,17 @@ class ITDClient:
         """
         result = await self.post("api/notifications/read-all")
         return result.json()["success"]
+
+    async def get_verification_status(self) -> str:
+        """Получить статус верификации"""
+        result = await self.get("api/verification/status")
+        return result.json()["status"]
+
+    async def submit_verification(self, video_url: str) -> dict:
+        """Отправить запрос на верификацию.
+
+        Args:
+            video_url: url видео, загруженного на itd
+        """
+        result = await self.post("api/verification/submit", {"videoUrl": video_url})
+        return result.json()
