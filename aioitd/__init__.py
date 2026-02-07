@@ -1,3 +1,3 @@
-from client import *
-from exceptions import *
-from models import *
+from aioitd.client import *
+from aioitd.exceptions import *
+from aioitd.models import *

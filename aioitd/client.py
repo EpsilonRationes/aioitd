@@ -693,9 +693,8 @@ class ITDClient:
         Raises:
             UnauthorizedError: неверный access токен
         """
-        attachment_ids = list(map(lambda id: UUID(id) if isinstance(UUID, str) else id, attachment_ids))
-
-        result = await self.post("api/posts", {"content": content, "attachmentIds": attachment_ids})
+        attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
+        result = await self.post("api/posts", {"content": content, "attachmentIds": list(map(str, attachment_ids))})
         data = result.json()
         data["author"]["id"] = str(self.id)
         return Post.from_json(data)
@@ -720,3 +719,104 @@ class ITDClient:
         data = result.json()
 
         return data["content"]
+
+    async def comment(self, post_id: UUID | str, content: str = "", attachment_ids: list[UUID | str] | None = None):
+        """Создать комментарий.
+
+        Args:
+            post_id: UUID поста
+            content: текст поста
+            attachment_ids: список UUID файлов
+        """
+
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+        if attachment_ids is None:
+            attachment_ids = []
+        else:
+            attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
+        result = await self.post(
+            f"api/posts/{post_id}/comments",
+            {"content": content, "attachmentIds": list(map(str, attachment_ids))}
+        )
+        data = result.json()
+        return Comment.from_json(data)
+
+    async def delete_comment(self, comment_id: UUID | str) -> None:
+        """Удалить комментарий.
+
+        Args:
+            comment_id: UUID комментария
+        """
+        if isinstance(comment_id, str):
+            comment_id = UUID(comment_id)
+
+        await self.delete(f"api/comments/{comment_id}")
+
+    async def restore_comment(self, comment_id: UUID | str) -> None:
+        """Восстановить комментарий.
+
+        Args:
+            comment_id: UUID комментария
+        """
+        if isinstance(comment_id, str):
+            comment_id = UUID(comment_id)
+        await self.post(f"api/comments/{comment_id}/restore")
+
+    async def like_comment(self, comment_id: UUID | str) -> int:
+        """Восстановить комментарий.
+
+        Args:
+            comment_id: UUID комментария
+
+        Returns: Количество лайков на комментарии
+        """
+        if isinstance(comment_id, str):
+            comment_id = UUID(comment_id)
+        result = await self.post(f"api/comments/{comment_id}/like")
+        return result.json()["likesCount"]
+
+    async def delete_like_comment(self, comment_id: UUID | str) -> int:
+        """Удалить лайк с комментария.
+
+        Args:
+            comment_id: UUID комментария
+
+        Returns: Количество лайков на комментарии
+        """
+        if isinstance(comment_id, str):
+            comment_id = UUID(comment_id)
+        result = await self.delete(f"api/comments/{comment_id}/like")
+        return result.json()["likesCount"]
+
+    async def replies(
+            self,
+            comment_id: UUID | str,
+            content: str,
+            replay_to_user_id: UUID | str | None = None,
+            attachment_ids: list[UUID | str] | None = None
+    ) -> Comment:
+        """Ответить на комментарий
+
+        Args:
+            comment_id: UUID комментария
+            content: текст ответа
+            replay_to_user_id: UUID пользователя, которому ответ
+            attachment_ids: список UUID файлов
+        """
+        if isinstance(comment_id, str):
+            comment_id = UUID(comment_id)
+        if isinstance(replay_to_user_id, str):
+            replay_to_user_id = UUID(replay_to_user_id)
+        if attachment_ids is None:
+            attachment_ids = []
+        else:
+            attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
+        result = await self.post(
+            f"api/comments/{comment_id}/replies",
+            {"content": content, "attachmentIds": list(map(str, attachment_ids))}
+              | ({} if replay_to_user_id is None else {"replayToUserId": str(replay_to_user_id)})
+        )
+        data = result.json()
+        data['repliesCount'] = 0
+        return Comment.from_json(data)

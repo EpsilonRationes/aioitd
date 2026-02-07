@@ -281,7 +281,7 @@ class Comment:
             replies_count=data["repliesCount"],
             likes_count=data["likesCount"],
             author=Author.from_json(data["author"]),
-            replies=list(map(Replay.from_json, data["replies"]))
+            replies=list(map(Replay.from_json, data.get("replies", [])))
         )
 
 
