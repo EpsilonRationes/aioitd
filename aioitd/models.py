@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 
@@ -425,3 +425,24 @@ class Clan:
             member_count=data["memberCount"]
         )
 
+@dataclass
+class Notification:
+    id: UUID
+    created_at: datetime
+    preview: str
+    read: bool
+    read_at: datetime | None
+    target_id: UUID | None
+    target_type: Literal['reply', 'like', 'wall_post', 'follow', 'comment']
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Notification:
+        return Notification(
+            id=UUID(data["id"]),
+            created_at=datetime.fromisoformat(data["createdAt"].replace('Z', '+00:00')),
+            preview=data["preview"],
+            read=data["read"],
+            read_at=datetime.fromisoformat(data["readAt"].replace('Z', '+00:00')) if data.get("readAt") else None,
+            target_id=UUID(data["targetId"]) if data["targetId"] is not None else None,
+            target_type=data["targetType"]
+        )

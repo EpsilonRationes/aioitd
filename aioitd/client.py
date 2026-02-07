@@ -1,5 +1,6 @@
+from collections import namedtuple
 from json import JSONDecodeError
-from typing import Callable, IO, Coroutine, Literal
+from typing import Callable, IO, Coroutine, Literal, NamedTuple
 import time
 import base64
 import json
@@ -1039,3 +1040,58 @@ class ITDClient:
         result = await self.get('api/users/suggestions/who-to-follow')
         data = result.json()
         return list(map(User.from_json, data["users"]))
+
+
+    class NotificationsResponse(NamedTuple):
+        has_more: bool
+        notifications: list[Notification]
+
+    async def get_notifications(self, offset: int = 0, limit: int = 30) -> NotificationsResponse:
+        """Получить уведомления.
+
+        Args:
+            offset: сдвиг
+            limit: максимально количество уведомлений в ответе
+
+        Returns:
+
+        """
+        result = await self.get("api/notifications/", params={"limit": limit, "offset": offset})
+        data = result.json()
+        return self.NotificationsResponse(data["hasMore"], list(map(Notification.from_json, data["notifications"])))
+
+    async def read_batch_notifications(self, notifications_ids: list[UUID | str]) -> int:
+        """Пометить прочитанными несколько уведомлений.
+
+        Args:
+            notifications_ids: список UUID уведомлений
+        """
+        notifications_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, notifications_ids))
+        result = await self.post("api/notifications/read-batch", {"ids": list(map(str, notifications_ids))})
+        return result.json()["count"]
+
+    async def read_notification(self, notification_id: UUID | str) -> bool:
+        """Пометить сообщение прочитанным.
+
+        Args:
+            notification_id: UUID уведомления
+
+        Returns: успешна ли операция
+        """
+        if isinstance(notification_id, str):
+            notification_id = UUID(notification_id)
+        result = await self.post(f"api/notifications/{notification_id}/read")
+        return result.json()["success"]
+
+    async def get_notifications_count(self) -> int:
+        """Получить количество непрочитанных уведомлений"""
+        result = await self.get("api/notifications/count")
+        return result.json()["count"]
+
+    async def read_all_notifications(self) -> bool:
+        """Пометить все уведомления прочитанными.
+
+        Returns: успешна ли операция
+        """
+        result = await self.post("api/notifications/read-all")
+        return result.json()["success"]
