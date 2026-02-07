@@ -246,6 +246,17 @@ class FullUser(User):
             wall_closed=data["wallClosed"]
         )
 
+@dataclass
+class FollowUser(Author):
+    is_following: bool
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> FollowUser:
+        return FollowUser(
+            **(super().from_json(data)).__dict__,
+            is_following=data["isFollowing"]
+        )
+
 
 @dataclass
 class BasePost:
@@ -400,3 +411,17 @@ class Privacy:
             is_private=data["isPrivate"],
             wall_closed=data["wallClosed"]
         )
+
+
+@dataclass
+class Clan:
+    avatar: str
+    member_count: int
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Clan:
+        return Clan(
+            avatar=data["avatar"],
+            member_count=data["memberCount"]
+        )
+

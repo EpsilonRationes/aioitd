@@ -815,7 +815,7 @@ class ITDClient:
         result = await self.post(
             f"api/comments/{comment_id}/replies",
             {"content": content, "attachmentIds": list(map(str, attachment_ids))}
-              | ({} if replay_to_user_id is None else {"replayToUserId": str(replay_to_user_id)})
+            | ({} if replay_to_user_id is None else {"replayToUserId": str(replay_to_user_id)})
         )
         data = result.json()
         data['repliesCount'] = 0
@@ -881,7 +881,7 @@ class ITDClient:
             self,
             target_id: UUID | str,
             target_type: Literal["post", "comment", "user"] = "user",
-            reason:  Literal["spam", "violence", "hate", "adult", "fraud", "other"] = "other",
+            reason: Literal["spam", "violence", "hate", "adult", "fraud", "other"] = "other",
             description: str = "",
     ) -> Report:
         """Отправить репорт.
@@ -965,3 +965,77 @@ class ITDClient:
         result = await self.put(f"api/users/me/privacy", params)
         data = result.json()
         return Privacy.from_json(data)
+
+    async def follow(self, username: str) -> int:
+        """Подписаться на пользователя
+
+        Args:
+            username: имя пользователя
+
+        Returns: Количество подписчиков пользователя
+        """
+        result = await self.post(f"api/users/{username}/follow")
+        return result.json()["followersCount"]
+
+    async def unfollow(self, username: str) -> int:
+        """Отписать от пользователя
+
+        Args:
+            username: имя пользователя
+
+        Returns: Количество подписчиков пользователя
+        """
+        result = await self.post(f"api/users/{username}/follow")
+        return result.json()["followersCount"]
+
+    async def get_followers(
+            self,
+            username: str,
+            page: int = 1,
+            limit: int = 30
+    )-> tuple[IntPagination, list[FollowUser]]:
+        """Получить подписчиков пользователя.
+
+        Args:
+            username: имя пользователя
+            page: страница
+            limit: максимальное количество пользователей на странице
+        """
+        result = await self.get(f"api/users/{username}/followers", params={"limit": limit, "page": page})
+        data = result.json()["data"]
+        pagination = IntPagination.from_json(data['pagination'])
+        users = list(map(FollowUser.from_json, data["users"]))
+
+        return pagination, users
+
+    async def get_following(
+            self,
+            username: str,
+            page: int = 1,
+            limit: int = 30
+    ) -> tuple[IntPagination, list[FollowUser]]:
+        """Получить подписки пользователя.
+
+        Args:
+            username: имя пользователя
+            page: страница
+            limit: максимальное количество пользователей на странице
+        """
+        result = await self.get(f"api/users/{username}/following", params={"limit": limit, "page": page})
+        data = result.json()["data"]
+        pagination = IntPagination.from_json(data['pagination'])
+        users = list(map(FollowUser.from_json, data["users"]))
+
+        return pagination, users
+
+    async def get_top_clans(self) -> list[Clan]:
+        """Получить топ кланов."""
+        result = await self.get('api/users/stats/top-clans')
+        data = result.json()
+        return list(map(Clan.from_json, data["clans"]))
+
+    async def get_who_to_follow(self) -> list[User]:
+        """Получить топ по подпискам."""
+        result = await self.get('api/users/suggestions/who-to-follow')
+        data = result.json()
+        return list(map(User.from_json, data["users"]))
