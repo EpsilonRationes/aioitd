@@ -876,3 +876,27 @@ class ITDClient:
         users = list(map(User.from_json, data["users"]))
 
         return users
+
+    async def report(
+            self,
+            target_id: UUID | str,
+            target_type: Literal["post", "comment", "user"] = "user",
+            reason:  Literal["spam", "violence", "hate", "adult", "fraud", "other"] = "other",
+            description: str = "",
+    ) -> Report:
+        """Отправить репорт.
+
+        Args:
+            target_id: UUID цели
+            target_type: тип цели
+            reason: причина
+            description: текст репорта
+        """
+        if isinstance(target_id, str):
+            target_id = UUID(target_id)
+        result = await self.post(
+            "api/reports",
+            {"targetId": str(target_id), "targetType": target_type, "reason": reason, "description": description}
+        )
+        data = result.json()["data"]
+        return Report.from_json(data)

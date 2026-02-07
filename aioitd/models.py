@@ -333,3 +333,16 @@ class FullPost(Post):
             **(super().from_json(data)).__dict__,
             comments=list(map(Comment.from_json, data["comments"]))
         )
+
+
+@dataclass
+class Report:
+    id: UUID
+    created_at: datetime
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Report:
+        return Report(
+            id=UUID(data["id"]),
+            created_at=datetime.fromisoformat(data['createdAt'].replace('Z', '+00:00'))
+        )
