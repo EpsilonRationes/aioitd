@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from pydoc import describe
 from typing import Any, Literal
 from uuid import UUID
 
@@ -184,14 +185,42 @@ class WallRecipient(BaseAuthor):
 
 
 @dataclass
+class Pin:
+    slug: str
+    name: str
+    description: str
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Pin:
+        return Pin(
+            slug=data['slug'],
+            name=data['name'],
+            description=data["description"]
+        )
+
+@dataclass
+class PinWithDate(Pin):
+    granted_at: datetime
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> PinWithDate:
+        return PinWithDate(
+            **(super().from_json(data)).__dict__,
+            granted_at=datetime.fromisoformat(data['grantedAt'].replace('Z', '+00:00'))
+        )
+
+
+@dataclass
 class Author(WallRecipient):
     verified: bool
+    pin: None | Pin
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> Author:
         return Author(
             **(super().from_json(data)).__dict__,
             verified=data["verified"],
+            pin=Pin.from_json(data["pin"]) if data['pin'] is not None else None
         )
 
 

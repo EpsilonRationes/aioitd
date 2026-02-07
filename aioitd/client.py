@@ -267,8 +267,7 @@ class AsyncITDClient:
 
         return hashtags
 
-    async def search_hashtags(self, query: str, limit: int = 20) -> list[
-        HashTag]:
+    async def search_hashtags(self, query: str, limit: int = 20) -> list[HashTag]:
         """Найти хештеги.
 
         Args:
@@ -541,7 +540,7 @@ class AsyncITDClient:
     async def get_posts_by_user(
             self, username: str, cursor: datetime | None = None, limit: int = 20, sort: Literal["new"] = "new"
     ) -> tuple[TimePagination, list[Post]]:
-        """Посты на стене пользователя. Отсортированы по дате бупликации
+        """Посты на стене пользователя. Отсортированы по дате публикации
 
         Args:
             username: имя пользователя
@@ -934,6 +933,8 @@ class AsyncITDClient:
         """Получить данные текущего пользователя"""
         result = await self.get(f"api/users/me")
         data = result.json()
+        data['isFollowing'] = False
+        data['isFollowedBy'] = False
         return FullUser.from_json(data)
 
     async def get_privacy(self) -> Privacy:
@@ -1096,3 +1097,28 @@ class AsyncITDClient:
         """
         result = await self.post("api/verification/submit", {"videoUrl": video_url})
         return result.json()
+
+    class PinsResponse(NamedTuple):
+        active_pin: str
+        pins: list[PinWithDate]
+
+    async def get_pins(self) -> PinsResponse:
+        """Получить список пин'ов и текущий пин"""
+        result = await self.get("api/users/me/pins")
+        data = result.json()["data"]
+        return self.PinsResponse(data['activePin'], list(map(PinWithDate.from_json, data["pins"])))
+
+    async def set_pin(self, pin_slug: str) -> str:
+        """Выбрать пин
+
+        Args:
+            pin_slug: slug пина
+
+        Returns: slug пина
+        """
+        result = await self.put("api/users/me/pin", {"slug": pin_slug})
+        return result.json()["pin"]
+
+    async def delete_pin(self) -> None:
+        """Убрать пин."""
+        await self.delete("api/users/me/pin")
