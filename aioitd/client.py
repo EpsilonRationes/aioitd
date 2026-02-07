@@ -47,7 +47,7 @@ def datetime_to_str(dt: datetime) -> str:
     return dt.isoformat().replace('+00:00', 'Z')
 
 
-class ITDClient:
+class AsyncITDClient:
     """
     Attributes:
         refresh_token: refresh token
@@ -69,7 +69,7 @@ class ITDClient:
         self.refresh_on_unauthorized = refresh_on_unauthorized
         self.session = httpx.AsyncClient()
 
-    async def __aenter__(self) -> ITDClient:
+    async def __aenter__(self) -> AsyncITDClient:
         await self.start()
         return self
 
@@ -83,22 +83,6 @@ class ITDClient:
 
     async def close(self) -> None:
         await self.session.aclose()
-
-    def refresh_on_token_expired(func: Callable[..., Coroutine]) -> Callable[..., Coroutine]:
-        async def wrapper(self: ITDClient, *args, **kwargs):
-            if self.check_access_token_expired:
-                if is_token_expired(self.access_token):
-                    await self.refresh()
-            if self.refresh_on_unauthorized:
-                try:
-                    return await func(*args, *kwargs)
-                except UnauthorizedError:
-                    await self.refresh()
-                    return await func(*args, **kwargs)
-            else:
-                return await func(*args, **kwargs)
-
-        return wrapper
 
     async def _unauthorized_wrapper(self, method: Callable[..., Coroutine], url: str, **kwargs) -> httpx.Response:
         if self.check_access_token_expired:
@@ -152,6 +136,8 @@ class ITDClient:
                     raise NotPinedError
                 if error['code'] == "CONFLICT":
                     raise ConflictError(error["message"])
+                if error['code'] == "VALIDATION_ERROR":
+                    raise ValidationError(error["message"])
                 else:
                     raise ITDError(code=error['code'], message=error["message"])
         except JSONDecodeError:

@@ -57,9 +57,9 @@ class FileNotFound(ValueError):
         return f"Файл не найден, или нет прав доступа к нему"
 
 
-class ForbiddenError(ValueError):
-    ...
+class ForbiddenError(ValueError): ...
 
+class ValidationError(ValueError): ...
 
 class NotPinedError(Exception):
     def __set__(self):
