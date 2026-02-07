@@ -900,3 +900,68 @@ class ITDClient:
         )
         data = result.json()["data"]
         return Report.from_json(data)
+
+    async def update_profile(
+            self,
+            bio: str | None = None,
+            display_name: str | None = None,
+            username: str | None = None,
+            banner_id: UUID | str | None = None
+    ) -> Me:
+        """Обновить профиль.
+
+        Args:
+            bio: о себе
+            display_name: имя
+            username: юзернейм
+            banner_id: UUID файла, для нового баннера
+        """
+        if isinstance(banner_id, str):
+            banner_id = UUID(banner_id)
+        json = {}
+        if bio is not None:
+            json["bio"] = bio
+        if display_name is not None:
+            json["displayName"] = display_name
+        if username is not None:
+            json["username"] = username
+        if banner_id is not None:
+            json['bannerId'] = banner_id
+
+        result = await self.put("api/users/me", json)
+        data = result.json()
+        return Me.from_json(data)
+
+    async def get_user(self, username: str) -> FullUser:
+        """Получить данные пользователя.
+
+        Args:
+            username: имя пользователя
+        """
+        result = await self.get(f"api/users/{username}")
+        data = result.json()
+        return FullUser.from_json(data)
+
+    async def get_me(self) -> FullUser:
+        """Получить данные текущего пользователя"""
+        result = await self.get(f"api/users/me")
+        data = result.json()
+        return FullUser.from_json(data)
+
+    async def get_privacy(self) -> Privacy:
+        """Получить настройки приватности текущего пользователя."""
+        result = await self.get(f"api/users/me/privacy")
+        data = result.json()
+        return Privacy.from_json(data)
+
+    async def update_privacy(self, wall_closed: bool | None = None, is_private: bool | None = None) -> Privacy:
+        """Изменить настройки приватности текущего пользователя."""
+        params = {}
+        if is_private is not None:
+            params["isPrivate"] = is_private
+        if wall_closed is not None:
+            params["wall_closed"] = wall_closed
+
+        result = await self.put(f"api/users/me/privacy", params)
+        data = result.json()
+        return Privacy.from_json(data)

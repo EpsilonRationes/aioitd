@@ -119,6 +119,7 @@ class TimePagination(Pagination):
             if data.get("nextCursor") is not None else None
         )
 
+
 @dataclass
 class CommentPagination:
     has_more: bool
@@ -132,6 +133,7 @@ class CommentPagination:
             next_cursor=data["nextCursor"],
             total=int(data["total"])
         )
+
 
 @dataclass
 class Attachment:
@@ -206,6 +208,46 @@ class User(Author):
 
 
 @dataclass
+class Me(BaseAuthor):
+    bio: str
+    update_at: datetime
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Me:
+        return Me(
+            **(super().from_json(data)).__dict__,
+            bio=data["bio"],
+            update_at=datetime.fromisoformat(data['updatedAt'].replace('Z', '+00:00'))
+        )
+
+
+@dataclass
+class FullUser(User):
+    bio: str
+    banner: str | None
+    created_at: datetime
+    is_followed_by: bool
+    is_following: bool
+    pinned_post_id: UUID | None
+    posts_count: int
+    wall_closed: bool
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> FullUser:
+        return FullUser(
+            **(super().from_json(data)).__dict__,
+            bio=data["bio"],
+            created_at=datetime.fromisoformat(data['createdAt'].replace('Z', '+00:00')),
+            banner=data.get("banner"),
+            is_following=data["isFollowing"],
+            is_followed_by=data["isFollowedBy"],
+            pinned_post_id=UUID(data["pinnedPostId"]) if data.get("pinnedPostId") is not None else None,
+            posts_count=data["postsCount"],
+            wall_closed=data["wallClosed"]
+        )
+
+
+@dataclass
 class BasePost:
     id: UUID
     content: str
@@ -254,7 +296,6 @@ class Post(BasePost):
     original_post: OriginalPost | None
     wall_recipient_id: UUID | None
     wall_recipient: WallRecipient | None
-
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> Post:
@@ -345,4 +386,17 @@ class Report:
         return Report(
             id=UUID(data["id"]),
             created_at=datetime.fromisoformat(data['createdAt'].replace('Z', '+00:00'))
+        )
+
+
+@dataclass
+class Privacy:
+    is_private: bool
+    wall_closed: bool
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Privacy:
+        return Privacy(
+            is_private=data["isPrivate"],
+            wall_closed=data["wallClosed"]
         )
