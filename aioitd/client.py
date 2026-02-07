@@ -1,12 +1,17 @@
+from datetime import datetime
 from json import JSONDecodeError
-from typing import Callable, IO, Coroutine, Literal, NamedTuple
+from typing import Callable, IO, Coroutine, Literal, NamedTuple, Any
 import time
 import base64
 import json
 import re
+from uuid import UUID
 
-from aioitd.exceptions import *
-from aioitd.models import *
+from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, InvalidOldPasswordError, \
+    SomePasswordError, TokenRevokedError, TokenNotFoundError, MissingTokenError, ForbiddenError, NotPinedError, \
+    ConflictError, ValidationError, ITDError
+from aioitd.models import File, HashTag, UUIDPagination, Post, IntPagination, TimePagination, FullPost, \
+    CommentPagination, Comment, User, Report, Me, FullUser, Privacy, FollowUser, Clan, Notification, PinWithDate
 
 import httpx
 
@@ -290,7 +295,7 @@ class AsyncITDClient:
     async def get_posts_by_hashtag(
             self, hashtag_name: str, cursor: UUID | str | None = None,
             limit: int = 20
-    ) -> tuple[HashTag, HashtagsPagination, list[Post]]:
+    ) -> tuple[HashTag, UUIDPagination, list[Post]]:
         """Посты по хештегу.
 
         Args:
@@ -322,7 +327,7 @@ class AsyncITDClient:
             raise NotFoundError("NOT_FOUND", f"Хештег {hashtag_name} не найден")
         hashtag = HashTag.from_json(hashtag)
 
-        pagination = HashtagsPagination.from_json(data["pagination"])
+        pagination = UUIDPagination.from_json(data["pagination"])
 
         posts = list(map(Post.from_json, data["posts"]))
 
@@ -593,7 +598,7 @@ class AsyncITDClient:
     async def get_posts_by_user_liked(
             self, username: str, cursor: datetime | None = None, limit: int = 20
     ) -> tuple[TimePagination, list[Post]]:
-        """Посты лайкнутые пользователем.
+        """Посты на которые пользователей поставил лайк.
 
         Args:
             username: имя пользователя
@@ -900,7 +905,7 @@ class AsyncITDClient:
         Args:
             bio: о себе
             display_name: имя
-            username: юзернейм
+            username: имя пользователя
             banner_id: UUID файла, для нового баннера
         """
         if isinstance(banner_id, str):

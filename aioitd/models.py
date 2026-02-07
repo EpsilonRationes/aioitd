@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from pydoc import describe
 from typing import Any, Literal
 from uuid import UUID
 
@@ -79,7 +78,7 @@ class HashTag:
 
 
 @dataclass
-class HashtagsPagination(Pagination):
+class UUIDPagination(Pagination):
     """Пагинация постов при поиске по хештегу
 
     Attributes:
@@ -88,9 +87,9 @@ class HashtagsPagination(Pagination):
     next_cursor: UUID
 
     @classmethod
-    def from_json(cls, data: dict[str, Any]) -> HashtagsPagination:
+    def from_json(cls, data: dict[str, Any]) -> UUIDPagination:
         pagination = super().from_json(data)
-        return HashtagsPagination(
+        return UUIDPagination(
             **pagination.__dict__,
             next_cursor=UUID(data["nextCursor"])
         )
