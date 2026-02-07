@@ -820,3 +820,59 @@ class ITDClient:
         data = result.json()
         data['repliesCount'] = 0
         return Comment.from_json(data)
+
+    async def search(
+            self,
+            query: str,
+            user_limit: int = 20,
+            hashtag_limit: int = 20
+    ) -> tuple[list[HashTag], list[User]]:
+        """Поиск
+
+        Args:
+            query: запрос
+            user_limit: максимальное количество выданных пользователей
+            hashtag_limit: максимальное количество выданных хештегов
+        """
+        result = await self.get(
+            "api/search/", params={"userLimit": user_limit, "hashtagsLimit": hashtag_limit, 'q': query}
+        )
+
+        data = result.json()["data"]
+
+        hashtags = list(map(HashTag.from_json, data["hashtags"]))
+        users = list(map(User.from_json, data["users"]))
+
+        return users, hashtags
+
+    async def search_users(self, query: str, user_limit: int = 20) -> list[User]:
+        """Поиск пользователей
+
+        Args:
+            query: запрос
+            user_limit: максимальное количество выданных пользователей
+        """
+        result = await self.get(
+            "api/search/", params={"userLimit": user_limit, 'q': query}
+        )
+        data = result.json()["data"]
+
+        users = list(map(User.from_json, data["users"]))
+
+        return users
+
+    async def search_hashtags2(self, query: str, hashtag_limit: int = 20) -> list[User]:
+        """Поиск хештегов
+
+        Args:
+            query: запрос
+            hashtag_limit: максимальное количество выданных хештегов
+        """
+        result = await self.get(
+            "api/search/", params={"hashtagLimit": hashtag_limit, 'q': query}
+        )
+        data = result.json()["data"]
+
+        users = list(map(User.from_json, data["users"]))
+
+        return users

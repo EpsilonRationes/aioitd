@@ -194,6 +194,18 @@ class Author(WallRecipient):
 
 
 @dataclass
+class User(Author):
+    followers_count: int
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> User:
+        return User(
+            **(super().from_json(data)).__dict__,
+            followers_count=data["followersCount"],
+        )
+
+
+@dataclass
 class BasePost:
     id: UUID
     content: str
