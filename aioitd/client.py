@@ -6,10 +6,11 @@ import base64
 import json
 import re
 from uuid import UUID
+import mimetypes
 
 from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, InvalidOldPasswordError, \
-    SomePasswordError, TokenRevokedError, TokenNotFoundError, MissingTokenError, ForbiddenError, NotPinedError, \
-    ConflictError, ValidationError, ITDError
+    SomePasswordError, TokenRevokedError, TokenNotFoundError, TokenMissingError, ForbiddenError, NotPinedError, \
+    ConflictError, ValidationError, ITDError, itd_codes, TooLargeError, NotAllowedError, RateLimitError
 from aioitd.models import File, HashTag, UUIDPagination, Post, IntPagination, TimePagination, FullPost, \
     CommentPagination, Comment, User, Report, Me, FullUser, Privacy, FollowUser, Clan, Notification, PinWithDate
 
@@ -38,14 +39,27 @@ def add_bearer(token: str):
         return token
 
 
-def validate_limit(limit: int):
+def validate_limit(limit: int, min: int = 1, max: int = 50):
     if not (1 <= limit <= 50):
-        raise ValueError("limit должен быть больше от 1 до 50")
+        raise ValidationError(ValidationError.code, f"limit должен быть больше от {min} до {max}")
 
+def valid_hashtag_name(s) -> bool:
+    # Более явное регулярное выражение
+    pattern = r'^[A-Za-zА-Яа-я\d_]+$'
+    return bool(re.match(pattern, s))
 
 def verify_password(password: str) -> bool:
     """Проверить пароль. От 8 до 100 символов, содержит хотя бы одну букву, содержит хотя бы оду цифру."""
-    return 8 <= len(password) <= 100 and re.match(r"[a-zA-Z]", password) and re.match(r"\d", password)
+    return bool(8 <= len(password) <= 100 and re.search(r"[a-zA-Z]", password) and re.search(r"\d", password))
+
+
+def valid_file_mimetype(path: str) -> bool:
+    """Проверить тип файла. Изображение, видео или аудио."""
+    mimetype, _ = mimetypes.guess_file_type(path)
+    if mimetype is None:
+        return True
+    mimetype = mimetype.split('/')[0]
+    return mimetype in ["video", 'image', 'audio']
 
 
 def datetime_to_str(dt: datetime) -> str:
@@ -61,18 +75,22 @@ class AsyncITDClient:
             запрос ещё раз
         check_access_token_expired: проверять ли access токен. Если True перед каждым запросом токен будет проверен и
             в случае истечения времени жизни, будет вызван `refresh`
+        upload_file_timeout: ограничение времени для загрузки файлов
+        timeout: ограничение по времени для запросов
     """
 
     def __init__(self, refresh_token: str, domain: str = "xn--d1ah4a.com", refresh_on_unauthorized: bool = True,
-                 check_access_token_expired: bool = True):
+                 check_access_token_expired: bool = True, upload_file_timeout: int = 200, timeout: int = 10):
         if len(refresh_token) == 0:
-            raise ValueError("refresh токен не может быть пустой строкой")
+            raise TokenMissingError(TokenMissingError.code, "refresh токен не может быть пустой строкой")
         self.refresh_token = refresh_token
         self.domain = domain
         self.access_token = "." + base64.urlsafe_b64encode(b'{"exp": 0}').decode("utf-8")
         self.check_access_token_expired = check_access_token_expired
         self.refresh_on_unauthorized = refresh_on_unauthorized
         self.session = httpx.AsyncClient()
+        self.upload_file_timeout = upload_file_timeout
+        self.timeout = timeout
 
     async def __aenter__(self) -> AsyncITDClient:
         await self.start()
@@ -103,7 +121,13 @@ class AsyncITDClient:
         else:
             return await self._request(method, url, **kwargs)
 
-    async def _request(self, method: Callable[..., Coroutine], url: str, **kwargs) -> httpx.Response:
+    async def _request(
+            self,
+            method: Callable[..., Coroutine[None, None, httpx.Response]],
+            url: str, **kwargs
+    ) -> httpx.Response:
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = self.timeout
         result = await method(
             f"https://{self.domain}/{url}",
             headers={"authorization": add_bearer(self.access_token)},
@@ -114,35 +138,22 @@ class AsyncITDClient:
             raise UnauthorizedError
         if result.text == "NOT_FOUND":
             raise NotFoundError
-
+        if result.status_code == 413:
+            raise TooLargeError(TooLargeError.code, "Размер запроса слишком большой")
+        if result.status_code == 405:
+            raise NotAllowedError(NotAllowedError.code, "Not Allowed")
+        print(result.text)
         try:
             data = result.json()
             if 'error' in data:
                 error = data['error']
-                if error['code'] == "UNAUTHORIZED":
-                    raise UnauthorizedError
-                if error['code'] == "INVALID_PASSWORD":
-                    raise InvalidPasswordError
-                if error['code'] == "INVALID_OLD_PASSWORD":
-                    raise InvalidOldPasswordError
-                if error['code'] == "SOME_PASSWORD":
-                    raise SomePasswordError
-                if error['code'] == "SESSION_REVOKED":
-                    raise TokenRevokedError(self.refresh_token)
-                if error['code'] == "SESSION_NOT_FOUND":
-                    raise TokenNotFoundError(self.refresh_token)
-                if error['code'] == "REFRESH_TOKEN_MISSING":
-                    raise MissingTokenError
-                if error['code'] == 'NOT_FOUND':
-                    raise NotFoundError(error['message'])
-                if error['code'] == "FORBIDDEN":
-                    raise ForbiddenError(error['message'])
-                if error['code'] == "NOT_PINNED":
-                    raise NotPinedError
-                if error['code'] == "CONFLICT":
-                    raise ConflictError(error["message"])
-                if error['code'] == "VALIDATION_ERROR":
-                    raise ValidationError(error["message"])
+                print(error)
+                if error['code'] == "RATE_LIMIT_EXCEEDED":
+                    raise RateLimitError(code=error['code'], message=error["message"], retry_after=error["retryAfter"])
+                if error['code'] in itd_codes:
+                    ex = itd_codes[error['code']]
+                    message = ex.message if hasattr(ex, "message") else error['message']
+                    raise ex(ex.code, message)
                 else:
                     raise ITDError(code=error['code'], message=error["message"])
         except JSONDecodeError:
@@ -154,9 +165,9 @@ class AsyncITDClient:
         return await self._unauthorized_wrapper(self.session.get, url, params=params)
 
     async def post(self, url: str, json: Any | None = None, params: dict | None = None,
-                   cookies: dict | None = None, files: dict | None = None) -> httpx.Response:
+                   cookies: dict | None = None, files: dict | None = None, timeout: int | None = None) -> httpx.Response:
         return await self._unauthorized_wrapper(self.session.post, url, json=json, params=params, cookies=cookies,
-                                                files=files)
+                                                files=files, timeout=timeout)
 
     async def delete(self, url: str, params: dict | None = None) -> httpx.Response:
         return await self._unauthorized_wrapper(self.session.delete, url, params=params)
@@ -182,7 +193,7 @@ class AsyncITDClient:
             UnauthorizedError: истёк access_token
         """
         if not verify_password(new_password):
-            raise InvalidPasswordError
+            raise InvalidPasswordError(code=InvalidPasswordError.code, message='Password requirement not met')
 
         await self.post("api/v1/auth/change-password", {"oldPassword": old_password, "newPassword": new_password})
 
@@ -198,10 +209,10 @@ class AsyncITDClient:
         Raises:
             TokenNotFoundError: Такого токена не существует
             TokenRevokedError: Токен отозван
-            MissingTokenError: Токен не указан (равен пустой строке)
+            TokenMissingError: Токен не указан (равен пустой строке)
         """
         if len(self.refresh_token) == 0:
-            raise MissingTokenError
+            raise TokenMissingError(code=TokenMissingError.code, message="Refresh token not found")
 
         result = await self._request(
             self.session.post,
@@ -211,16 +222,21 @@ class AsyncITDClient:
         self.access_token = result.json()["accessToken"]
         return self.access_token
 
-    async def upload_file(self, file: IO[bytes]) -> File:
+    async def upload_file(self, file: IO[bytes], validate_mimetype: bool = True) -> File:
         """Загрузить файл.
 
         Args:
             file: файл
+            validate_mimetype: проверять ли тип файла перд запросом
 
         Raises:
             UnauthorizedError: неверный access токен
+            ValidationError: недопустимый тип файла
+            TooLargeError: размер запроса слишком большой
         """
-        result = await self.post("api/files/upload", files={'file': file})
+        if validate_mimetype and not valid_file_mimetype(file.name):
+            raise ValidationError(ValidationError.code, 'Недопустимый тип файла')
+        result = await self.post("api/files/upload", files={'file': file}, timeout=self.upload_file_timeout)
         return File.from_json(result.json())
 
     async def get_file(self, file_id: UUID | str) -> File:
@@ -231,6 +247,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
+            NotFoundError: файл не найден
         """
         if isinstance(file_id, str):
             file_id = UUID(file_id)
@@ -245,14 +262,12 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
-            FileNotFoundError: Файл не найден, или нет прав доступа к нему
+            NotFoundError: Файл не найден, или нет прав доступа к нему
         """
         if isinstance(file_id, str):
             file_id = UUID(file_id)
-        try:
-            await self.delete(f"api/files/{file_id}")
-        except NotFoundError:
-            raise FileNotFoundError
+        await self.delete(f"api/files/{file_id}")
+
 
     async def get_trending_hashtags(self, limit: int = 10) -> list[HashTag]:
         """Получить популярные хештеги.
@@ -262,6 +277,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
         result = await self.get("api/hashtags/trending", params={"limit": limit})
@@ -281,8 +297,12 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 50
+            ValidationError: len(query) <= 100
         """
         validate_limit(limit)
+        if len(query) > 100:
+            raise ValidationError(ValidationError.code, "Длина запроса должна быть не более 100")
         result = await self.get(f"api/hashtags", params={"q": query, "limit": limit})
         data = result.json()["data"]
 
@@ -306,7 +326,7 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: Хештег не найден
-
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
         if isinstance(cursor, str):
@@ -344,6 +364,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
 
@@ -369,6 +390,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
 
@@ -393,7 +415,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
-            NotFoundError: Пост не найден
+            NotFoundError: пост не существует или удалён
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
@@ -426,7 +448,8 @@ class AsyncITDClient:
             post_id: UUID поста
         Raises:
             UnauthorizedError: неверный access токен
-            NotFoundError: Пост не найден
+            ForbiddenError: Нет прав для восстановления поста
+            NotFoundError: Пост не найден или удалён
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
@@ -477,7 +500,6 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
-            NotFoundError: Пост не найден
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
@@ -495,6 +517,7 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: Пост не найден
+            ForbiddenError: Можно прикреплять посты только на своей стене
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
@@ -512,9 +535,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
-            NotFoundError: Пост не найден
             NotPinedError: Пост не прикреплён
-            ForbiddenError: Можно прикреплять только свои посты
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
@@ -533,9 +554,13 @@ class AsyncITDClient:
             UnauthorizedError: неверный access токен
             NotFoundError: Пост не найден
             ConflictError: Нельзя репостнуть два раза
+            ValidationError: Нельзя репостить свои посты
+            ValidationError: len(content) <= 5_000
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
+        if len(content) > 5_000:
+            raise ValidationError(ValidationError.code, "Максимальная длина content 5_000")
 
         result = await self.post(f"api/posts/{post_id}/repost", json={"content": content})
         data = result.json()
@@ -556,6 +581,7 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: пользователь не найден
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
         result = await self.get(
@@ -568,7 +594,7 @@ class AsyncITDClient:
 
         return pagination, posts
 
-    async def get_posts_by_popular(
+    async def get_posts_by_user_popular(
             self, username: str, cursor: int | None = None, limit: int = 20, sort: Literal["popular"] = "popular"
     ) -> tuple[IntPagination, list[Post]]:
         """Посты на стене пользователя. Отсортированы по популярности.
@@ -582,13 +608,14 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: пользователь не найден
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
         result = await self.get(
             f"api/posts/user/{username}",
             params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": cursor})
         )
-        print(result.json())
+
         data = result.json()["data"]
         pagination = IntPagination.from_json(data["pagination"])
         posts = list(map(Post.from_json, data["posts"]))
@@ -608,6 +635,7 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: пользователь не найден
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
         result = await self.get(
@@ -633,6 +661,7 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: пользователь не найден
+            ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
         result = await self.get(
@@ -663,7 +692,9 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: Пост не найден
+            ValidationError: 1 <= limit <= 50
         """
+        validate_limit(limit)
         if isinstance(post_id, str):
             post_id = UUID(post_id)
         result = await self.get(
@@ -675,7 +706,7 @@ class AsyncITDClient:
         comments = list(map(Comment.from_json, data["comments"]))
         return pagination, comments
 
-    async def create_post(self, content: str, attachment_ids: list[UUID | str]) -> Post:
+    async def create_post(self, content: str, attachment_ids: list[UUID | str] | None = None) -> Post:
         """Создать пост.
 
         Args:
@@ -684,8 +715,20 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
+            ValidationError: len(content) <= 5_000
+            ValidationError: len(attachments_ids) <= 10
+            ValidationError: Нельзя создать пост content="", attachment_ids = []
         """
-        attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
+        if len(content) > 5_000:
+            raise ValidationError(ValidationError.code, "Максимальная длина content 5_000")
+        if attachment_ids is None:
+            attachment_ids = []
+        elif len(attachment_ids) > 10:
+            raise ValidationError(ValidationError.code, 'Maximum 10 attachments allowed per post')
+        else:
+            attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
+        if len(attachment_ids) == 0 and len(content) == 0:
+            raise ValidationError(ValidationError.code, 'Content or attachments required')
         result = await self.post("api/posts", {"content": content, "attachmentIds": list(map(str, attachment_ids))})
         data = result.json()
         data["author"]["id"] = str(self.id)
@@ -703,9 +746,13 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: Пост не найден
+            ValidationError: len(content) <= 5_000
+            ForbiddenError: Нет прав для редактирования этого поста
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
+        if len(content) > 5_000:
+            raise ValidationError(ValidationError.code, "Максимальная длина content 5_000")
 
         result = await self.put(f"api/posts/{post_id}", {"content": content})
         data = result.json()
@@ -719,12 +766,22 @@ class AsyncITDClient:
             post_id: UUID поста
             content: текст поста
             attachment_ids: список UUID файлов
-        """
 
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: пост не найден
+            ValidationError: len(content) <= 5_000
+            ValidationError: len(attachments_ids) <= 4
+            ValidationError: Нельзя создать пост content="", attachment_ids = []
+        """
+        if len(content) > 5_000:
+            raise ValidationError(ValidationError.code, "Максимальная длина content 5_000")
         if isinstance(post_id, str):
             post_id = UUID(post_id)
         if attachment_ids is None:
             attachment_ids = []
+        elif len(attachment_ids) > 4:
+            raise ValidationError(ValidationError.code, 'Maximum 10 attachments allowed per post')
         else:
             attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
         result = await self.post(
@@ -739,6 +796,11 @@ class AsyncITDClient:
 
         Args:
             comment_id: UUID комментария
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: комментарий не найден
+            ForbiddenError: нет прав на удаление комментария
         """
         if isinstance(comment_id, str):
             comment_id = UUID(comment_id)
@@ -750,18 +812,26 @@ class AsyncITDClient:
 
         Args:
             comment_id: UUID комментария
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: комментарий не найден
         """
         if isinstance(comment_id, str):
             comment_id = UUID(comment_id)
         await self.post(f"api/comments/{comment_id}/restore")
 
     async def like_comment(self, comment_id: UUID | str) -> int:
-        """Восстановить комментарий.
+        """Поставить лайк на комментарий.
 
         Args:
             comment_id: UUID комментария
 
         Returns: Количество лайков на комментарии
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: комментарий не найден
         """
         if isinstance(comment_id, str):
             comment_id = UUID(comment_id)
@@ -775,6 +845,10 @@ class AsyncITDClient:
             comment_id: UUID комментария
 
         Returns: Количество лайков на комментарии
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: комментарий не найден
         """
         if isinstance(comment_id, str):
             comment_id = UUID(comment_id)
@@ -795,15 +869,28 @@ class AsyncITDClient:
             content: текст ответа
             replay_to_user_id: UUID пользователя, которому ответ
             attachment_ids: список UUID файлов
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: комментарий не найден
+            ValidationError: len(content) <= 5_000
+            ValidationError: len(attachments_ids) <= 4
+            ValidationError: Нельзя создать ответ content="", attachment_ids = []
         """
-        if isinstance(comment_id, str):
-            comment_id = UUID(comment_id)
-        if isinstance(replay_to_user_id, str):
-            replay_to_user_id = UUID(replay_to_user_id)
+        if len(content) > 5_000:
+            raise ValidationError(ValidationError.code, "Максимальная длина content 5_000")
         if attachment_ids is None:
             attachment_ids = []
+        elif len(attachment_ids) > 4:
+            raise ValidationError(ValidationError.code, 'Maximum 10 attachments allowed per post')
         else:
             attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
+        if len(attachment_ids) == 0 and len(content) == 0:
+            raise ValidationError(ValidationError.code, 'Content or attachments required')
+
+        if isinstance(comment_id, str):
+            comment_id = UUID(comment_id)
+
         result = await self.post(
             f"api/comments/{comment_id}/replies",
             {"content": content, "attachmentIds": list(map(str, attachment_ids))}
@@ -825,7 +912,12 @@ class AsyncITDClient:
             query: запрос
             user_limit: максимальное количество выданных пользователей
             hashtag_limit: максимальное количество выданных хештегов
+        Raises:
+            UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 20
         """
+        validate_limit(user_limit, 1, 20)
+        validate_limit(hashtag_limit, 1, 20)
         result = await self.get(
             "api/search/", params={"userLimit": user_limit, "hashtagsLimit": hashtag_limit, 'q': query}
         )
@@ -837,13 +929,18 @@ class AsyncITDClient:
 
         return users, hashtags
 
-    async def search_users(self, query: str, user_limit: int = 20) -> list[User]:
+    async def search_users2(self, query: str, user_limit: int = 20) -> list[User]:
         """Поиск пользователей
 
         Args:
             query: запрос
             user_limit: максимальное количество выданных пользователей
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 20
         """
+        validate_limit(user_limit, 1, 20)
         result = await self.get(
             "api/search/", params={"userLimit": user_limit, 'q': query}
         )
@@ -859,7 +956,12 @@ class AsyncITDClient:
         Args:
             query: запрос
             hashtag_limit: максимальное количество выданных хештегов
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 20
         """
+        validate_limit(hashtag_limit, 1, 20)
         result = await self.get(
             "api/search/", params={"hashtagLimit": hashtag_limit, 'q': query}
         )

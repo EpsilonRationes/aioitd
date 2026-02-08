@@ -197,6 +197,7 @@ class Pin:
             description=data["description"]
         )
 
+
 @dataclass
 class PinWithDate(Pin):
     granted_at: datetime
@@ -219,7 +220,7 @@ class Author(WallRecipient):
         return Author(
             **(super().from_json(data)).__dict__,
             verified=data["verified"],
-            pin=Pin.from_json(data["pin"]) if data['pin'] is not None else None
+            pin=Pin.from_json(data["pin"]) if data.get('pin') is not None else None
         )
 
 
@@ -273,6 +274,7 @@ class FullUser(User):
             posts_count=data["postsCount"],
             wall_closed=data["wallClosed"]
         )
+
 
 @dataclass
 class FollowUser(Author):
@@ -453,6 +455,7 @@ class Clan:
             member_count=data["memberCount"]
         )
 
+
 @dataclass
 class Notification:
     id: UUID
@@ -461,7 +464,9 @@ class Notification:
     read: bool
     read_at: datetime | None
     target_id: UUID | None
-    target_type: Literal['reply', 'like', 'wall_post', 'follow', 'comment']
+    target_type: Literal[
+        'reply', 'like', 'wall_post', 'follow', 'comment', 'repost', 'mention', 'verification_approved', 'verification_rejected'
+    ]
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> Notification:
