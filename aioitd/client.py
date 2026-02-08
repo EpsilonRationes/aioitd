@@ -7,6 +7,7 @@ import json
 import re
 from uuid import UUID
 import mimetypes
+import asyncio
 
 from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, ValidationError, ITDError, \
     itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError, Error429
@@ -66,6 +67,27 @@ def datetime_to_str(dt: datetime) -> str:
     return dt.isoformat().replace('+00:00', 'Z')
 
 
+class FetchInterval:
+    """Рассчитывает задержку между запросами
+
+    Attributes:
+        time_delta: минимальная задержка между запросами
+    """
+    def __init__(self, time_delta: float | int = 0.1):
+        self.time_delta = time_delta
+        self.last_fetch = 0
+
+    async def __call__(self):
+        await self.interval()
+
+    async def interval(self):
+        t = time.time()
+        last_fetch = self.last_fetch
+        if t - last_fetch < self.time_delta:
+            self.last_fetch =  last_fetch + self.time_delta
+            await asyncio.sleep(self.time_delta - t + last_fetch)
+        self.last_fetch = time.time()
+
 class AsyncITDClient:
     """
     Attributes:
@@ -77,10 +99,20 @@ class AsyncITDClient:
             в случае истечения времени жизни, будет вызван `refresh`
         upload_file_timeout: ограничение времени для загрузки файлов
         timeout: ограничение по времени для запросов
+        time_delta: минимальная задержка между запросами, чтобы не возникало Error426. Используйте FetchInterval чтобы
+            синхронизовать задержку между несколькими  AsyncITDClient. None чтобы отключить задержку
     """
 
-    def __init__(self, refresh_token: str, domain: str = "xn--d1ah4a.com", refresh_on_unauthorized: bool = True,
-                 check_access_token_expired: bool = True, upload_file_timeout: int = 200, timeout: int = 10):
+    def __init__(
+            self,
+            refresh_token: str,
+            domain: str = "xn--d1ah4a.com",
+            refresh_on_unauthorized: bool = True,
+            check_access_token_expired: bool = True,
+            upload_file_timeout: int = 200,
+            timeout: int = 10,
+            time_delta: FetchInterval | float | int | None = 0.1
+    ):
         if len(refresh_token) == 0:
             raise TokenMissingError(TokenMissingError.code, "refresh токен не может быть пустой строкой")
         self.refresh_token = refresh_token
@@ -91,6 +123,12 @@ class AsyncITDClient:
         self.session = httpx.AsyncClient()
         self.upload_file_timeout = upload_file_timeout
         self.timeout = timeout
+        if isinstance(time_delta, FetchInterval):
+            self.fetch_interval = time_delta
+        elif time_delta is None:
+            self.fetch_interval = None
+        else:
+            self.fetch_interval = FetchInterval(time_delta)
 
     async def __aenter__(self) -> AsyncITDClient:
         await self.start()
@@ -128,6 +166,10 @@ class AsyncITDClient:
     ) -> httpx.Response:
         if kwargs.get("timeout") is None:
             kwargs["timeout"] = self.timeout
+
+        if self.fetch_interval is not None:
+            await self.fetch_interval()
+
         result = await method(
             f"https://{self.domain}/{url}",
             headers={"authorization": add_bearer(self.access_token)},
