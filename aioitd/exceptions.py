@@ -23,6 +23,7 @@ class ITDError(Exception):
         'Not allowed to edit this post': "Нет прав для редактирования этого поста",
         'Comment not found': 'Комментарий не найден',
         'Not allowed to delete this comment': 'нет прав на удаление комментария',
+        'Rate limit exceeded': 'Слишком много запросов'
     }
 
     def __init__(self, code: str, message: str):
@@ -43,6 +44,10 @@ class ServerError(ITDError):
 
 class UnknowError(ITDError):
     code = "UNKNOWN_ERROR"
+
+class Error429(ITDError):
+    code = "Too Many Requests"
+
 
 class RateLimitError(ITDError):
     code = "RATE_LIMIT_EXCEEDED"

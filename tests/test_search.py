@@ -5,7 +5,7 @@ from tests.setting import refresh_token
 from tests import assert_async_raises
 
 
-class TestHashtags(unittest.IsolatedAsyncioTestCase):
+class TestSearch(unittest.IsolatedAsyncioTestCase):
 
     async def test_search(self):
         async with AsyncITDClient(refresh_token) as client:

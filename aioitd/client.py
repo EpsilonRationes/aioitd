@@ -9,7 +9,7 @@ from uuid import UUID
 import mimetypes
 
 from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, ValidationError, ITDError, \
-    itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError
+    itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError, Error429
 from aioitd.models import File, HashTag, UUIDPagination, Post, IntPagination, TimePagination, FullPost, \
     CommentPagination, Comment, User, Report, Me, FullUser, Privacy, FollowUser, Clan, Notification, PinWithDate
 
@@ -134,7 +134,7 @@ class AsyncITDClient:
             headers={"authorization": add_bearer(self.access_token)},
             **kwargs
         )
-
+        print(result.text)
         if result.text == "UNAUTHORIZED":
             raise UnauthorizedError
         if result.text == "NOT_FOUND":
@@ -149,6 +149,8 @@ class AsyncITDClient:
             if 'type' in data:
                 raise ParamsValidationError(type=data['type'], on=data['on'], found=data['found'])
             if 'error' in data:
+                if data['error'] == 'Too Many Requests':
+                    raise Error429(data['error'], data['message'])
                 error = data['error']
                 if error['code'] == "RATE_LIMIT_EXCEEDED":
                     raise RateLimitError(code=error['code'], message=error["message"], retry_after=error["retryAfter"])
