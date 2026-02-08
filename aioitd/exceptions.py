@@ -75,6 +75,16 @@ class InvalidOldPasswordError(ITDError):
     code = "INVALID_OLD_PASSWORD"
 
 
+class ParamsValidationError(ITDError):
+    def __init__(self, type: str, on: str, found: dict[str, str]):
+        self.type = type
+        self.on = on
+        self.found = found
+
+    def __str__(self):
+        return f"type: {self.type}, on: {self.on}, found: {self.found}"
+
+
 class ValidationError(ITDError):
     code = "VALIDATION_ERROR"
 

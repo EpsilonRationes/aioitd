@@ -8,9 +8,8 @@ import re
 from uuid import UUID
 import mimetypes
 
-from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, InvalidOldPasswordError, \
-    SomePasswordError, TokenRevokedError, TokenNotFoundError, TokenMissingError, ForbiddenError, NotPinedError, \
-    ConflictError, ValidationError, ITDError, itd_codes, TooLargeError, NotAllowedError, RateLimitError
+from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, ValidationError, ITDError, \
+    itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError
 from aioitd.models import File, HashTag, UUIDPagination, Post, IntPagination, TimePagination, FullPost, \
     CommentPagination, Comment, User, Report, Me, FullUser, Privacy, FollowUser, Clan, Notification, PinWithDate
 
@@ -43,10 +42,12 @@ def validate_limit(limit: int, min: int = 1, max: int = 50):
     if not (1 <= limit <= 50):
         raise ValidationError(ValidationError.code, f"limit должен быть больше от {min} до {max}")
 
+
 def valid_hashtag_name(s) -> bool:
     # Более явное регулярное выражение
     pattern = r'^[A-Za-zА-Яа-я\d_]+$'
     return bool(re.match(pattern, s))
+
 
 def verify_password(password: str) -> bool:
     """Проверить пароль. От 8 до 100 символов, содержит хотя бы одну букву, содержит хотя бы оду цифру."""
@@ -142,12 +143,13 @@ class AsyncITDClient:
             raise TooLargeError(TooLargeError.code, "Размер запроса слишком большой")
         if result.status_code == 405:
             raise NotAllowedError(NotAllowedError.code, "Not Allowed")
-        print(result.text)
+
         try:
             data = result.json()
+            if 'type' in data:
+                raise ParamsValidationError(type=data['type'], on=data['on'], found=data['found'])
             if 'error' in data:
                 error = data['error']
-                print(error)
                 if error['code'] == "RATE_LIMIT_EXCEEDED":
                     raise RateLimitError(code=error['code'], message=error["message"], retry_after=error["retryAfter"])
                 if error['code'] in itd_codes:
@@ -165,7 +167,8 @@ class AsyncITDClient:
         return await self._unauthorized_wrapper(self.session.get, url, params=params)
 
     async def post(self, url: str, json: Any | None = None, params: dict | None = None,
-                   cookies: dict | None = None, files: dict | None = None, timeout: int | None = None) -> httpx.Response:
+                   cookies: dict | None = None, files: dict | None = None,
+                   timeout: int | None = None) -> httpx.Response:
         return await self._unauthorized_wrapper(self.session.post, url, json=json, params=params, cookies=cookies,
                                                 files=files, timeout=timeout)
 
@@ -227,7 +230,7 @@ class AsyncITDClient:
 
         Args:
             file: файл
-            validate_mimetype: проверять ли тип файла перд запросом
+            validate_mimetype: проверять ли тип файла перед запросом
 
         Raises:
             UnauthorizedError: неверный access токен
@@ -267,7 +270,6 @@ class AsyncITDClient:
         if isinstance(file_id, str):
             file_id = UUID(file_id)
         await self.delete(f"api/files/{file_id}")
-
 
     async def get_trending_hashtags(self, limit: int = 10) -> list[HashTag]:
         """Получить популярные хештеги.
@@ -1089,7 +1091,7 @@ class AsyncITDClient:
             username: str,
             page: int = 1,
             limit: int = 30
-    )-> tuple[IntPagination, list[FollowUser]]:
+    ) -> tuple[IntPagination, list[FollowUser]]:
         """Получить подписчиков пользователя.
 
         Args:
@@ -1135,7 +1137,6 @@ class AsyncITDClient:
         result = await self.get('api/users/suggestions/who-to-follow')
         data = result.json()
         return list(map(User.from_json, data["users"]))
-
 
     class NotificationsResponse(NamedTuple):
         has_more: bool
@@ -1210,7 +1211,7 @@ class AsyncITDClient:
 
         Args:
             query: текст запроса
-            limit: максимальное количество выданных пользоватtлей
+            limit: максимальное количество выданных пользователей
         Raises:
             UnauthorizedError: неверный access токен
             ValidationError: 1 <= limit <= 50
