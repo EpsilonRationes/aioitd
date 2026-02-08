@@ -1,4 +1,3 @@
-
 class ITDError(Exception):
     messages = {
         'Session not found': 'Такого refresh токена не существует.',
@@ -33,17 +32,20 @@ class ITDError(Exception):
     def __str__(self):
         return f"code='{self.code}', message='{self.messages.get(self.message, self.message)}'"
 
-# Нельзя репостнуть свой пост
+
 class UnauthorizedError(ITDError):
     code = "UNAUTHORIZED"
     message = "Ошибка авторизации (просрочен access токен)"
+
 
 class ServerError(ITDError):
     code = "SERVER_ERROR"
     message = "Сервер временно недоступен"
 
+
 class UnknowError(ITDError):
     code = "UNKNOWN_ERROR"
+
 
 class Error429(ITDError):
     code = "Too Many Requests"
@@ -51,6 +53,7 @@ class Error429(ITDError):
 
 class RateLimitError(ITDError):
     code = "RATE_LIMIT_EXCEEDED"
+
     def __init__(self, code: str, message: str, retry_after: int):
         super().__init__(code, message)
         self.retry_after = retry_after
@@ -70,11 +73,14 @@ class TokenRevokedError(ITDError):
 class TokenMissingError(ITDError):
     code = "REFRESH_TOKEN_MISSING"
 
+
 class SomePasswordError(ITDError):
     code = "SAME_PASSWORD"
 
+
 class InvalidPasswordError(ITDError):
     code = "INVALID_PASSWORD"
+
 
 class InvalidOldPasswordError(ITDError):
     code = "INVALID_OLD_PASSWORD"
@@ -97,37 +103,25 @@ class ValidationError(ITDError):
 class TooLargeError(ITDError):
     code = "413"
 
+
 class NotAllowedError(ITDError):
     code = "403"
 
+
 class NotFoundError(ITDError):
     code = "NOT_FOUND"
-    #def __init__(self, message = "Ничего не найдено"):
-    #    self.
-    #    self.message = message
-
-
-
-
 
 
 class ForbiddenError(ITDError):
     code = "FORBIDDEN"
 
-    #    self.message = message
-
-
-
 
 class NotPinedError(ITDError):
     code = "NOT_PINNED"
 
-    #    self.message = "Пост не прикреплён"
-
 
 class ConflictError(ITDError):
-        code = "CONFLICT"
-        #self.message = message
+    code = "CONFLICT"
 
 
 itd_exceptions = [
@@ -143,7 +137,11 @@ itd_exceptions = [
     ForbiddenError,
     ValidationError,
     NotPinedError,
-    ConflictError
+    ConflictError,
+    RateLimitError,
+    UnknowError,
+    ServerError,
+
 ]
 
 itd_codes = {}
