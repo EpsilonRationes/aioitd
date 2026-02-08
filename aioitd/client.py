@@ -1205,6 +1205,22 @@ class AsyncITDClient:
         result = await self.post("api/verification/submit", {"videoUrl": video_url})
         return result.json()
 
+    async def search_users(self, query: str, limit: int = 20):
+        """Поиск пользователей.
+
+        Args:
+            query: текст запроса
+            limit: максимальное количество выданных пользоватtлей
+        Raises:
+            UnauthorizedError: неверный access токен
+            ValidationError: 1 <= limit <= 50
+        """
+        validate_limit(limit)
+        result = await self.get(f"api/users/search", params={"q": query, "limit": limit})
+        data = result.json()["data"]
+
+        return list(map(User.from_json, data['users']))
+
     class PinsResponse(NamedTuple):
         active_pin: str
         pins: list[PinWithDate]
