@@ -43,10 +43,9 @@ def validate_limit(limit: int, min: int = 1, max: int = 50):
         raise ValidationError(ValidationError.code, f"limit должен быть больше от {min} до {max}")
 
 
-def valid_hashtag_name(s) -> bool:
-    # Более явное регулярное выражение
-    pattern = r'^[A-Za-zА-Яа-я\d_]+$'
-    return bool(re.match(pattern, s))
+def valid_hashtag_name(hashtag: str) -> bool:
+    """Проверить хештег"""
+    return bool(re.match(r'^[A-Za-zА-Яа-я\d_]+$', hashtag))
 
 
 def verify_password(password: str) -> bool:
