@@ -133,7 +133,7 @@ class AsyncITDClient:
             headers={"authorization": add_bearer(self.access_token)},
             **kwargs
         )
-        print(result.text)
+
         if result.text == "UNAUTHORIZED":
             raise UnauthorizedError
         if result.text == "NOT_FOUND":
@@ -1023,7 +1023,7 @@ class AsyncITDClient:
         if username is not None:
             json["username"] = username
         if banner_id is not None:
-            json['bannerId'] = banner_id
+            json['bannerId'] = str(banner_id)
 
         result = await self.put("api/users/me", json)
         data = result.json()
