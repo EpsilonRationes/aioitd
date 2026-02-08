@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aioitd"
+version = "0.0.1"
+authors = [
+  { name="EpsilonRationes", email="rationess@gmal.com" },
+]
+description = "Асинхронный клиент для итд.com"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dependencies = ["httpx"]
+
+[project.urls]
+github = "https://github.com/EpsilonRationes/aioitd"
