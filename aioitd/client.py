@@ -751,13 +751,18 @@ class AsyncITDClient:
         comments = list(map(Comment.from_json, data["comments"]))
         return pagination, comments
 
-    async def create_post(self, content: str, attachment_ids: list[UUID | str] | None = None) -> Post:
+    async def create_post(
+            self,
+            content: str,
+            attachment_ids: list[UUID | str] | None = None,
+            wall_recipient_id: UUID | str = None
+    ) -> Post:
         """Создать пост.
 
         Args:
             content: Текст поста
             attachment_ids: Прикреплённые файлы
-
+            wall_recipient_id: id пользователя
         Raises:
             UnauthorizedError: неверный access токен
             ValidationError: len(content) <= 5_000
@@ -774,7 +779,13 @@ class AsyncITDClient:
             attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
         if len(attachment_ids) == 0 and len(content) == 0:
             raise ValidationError(ValidationError.code, 'Content or attachments required')
-        result = await self.post("api/posts", {"content": content, "attachmentIds": list(map(str, attachment_ids))})
+        result = await self.post(
+            "api/posts",
+            {
+                "content": content,
+                "attachmentIds": list(map(str, attachment_ids))} |
+            ({} if wall_recipient_id is None else {"wallRecipientId": str(wall_recipient_id)})
+        )
         data = result.json()
         data["author"]["id"] = str(self.id)
         return Post.from_json(data)
