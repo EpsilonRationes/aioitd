@@ -464,6 +464,7 @@ class Notification:
     read: bool
     read_at: datetime | None
     target_id: UUID | None
+    target_type: Literal['reply', 'like', 'wall_post', 'follow', 'comment'] | None
     type: Literal[
         'reply', 'like', 'wall_post', 'follow', 'comment', 'repost', 'mention', 'verification_approved', 'verification_rejected'
     ]
