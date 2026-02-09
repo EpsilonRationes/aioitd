@@ -400,7 +400,7 @@ class CommentAttachment(Attachment):
     def from_json(cls, data: dict[str, Any]) -> CommentAttachment:
         return CommentAttachment(
             **(super().from_json(data)).__dict__,
-            duration=data["duration"],
+            duration=data.get("duration"),
             order=data["order"]
         )
 

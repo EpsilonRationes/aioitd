@@ -73,7 +73,7 @@ class FetchInterval:
     Attributes:
         time_delta: минимальная задержка между запросами
     """
-    def __init__(self, time_delta: float | int = 0.1):
+    def __init__(self, time_delta: float | int = 0.105):
         self.time_delta = time_delta
         self.last_fetch = 0
 
@@ -111,7 +111,7 @@ class AsyncITDClient:
             check_access_token_expired: bool = True,
             upload_file_timeout: int = 200,
             timeout: int = 10,
-            time_delta: FetchInterval | float | int | None = 0.1
+            time_delta: FetchInterval | float | int | None = 0.105
     ):
         if len(refresh_token) == 0:
             raise TokenMissingError(TokenMissingError.code, "refresh токен не может быть пустой строкой")
