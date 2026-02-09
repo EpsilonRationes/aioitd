@@ -464,7 +464,7 @@ class Notification:
     read: bool
     read_at: datetime | None
     target_id: UUID | None
-    target_type: Literal[
+    type: Literal[
         'reply', 'like', 'wall_post', 'follow', 'comment', 'repost', 'mention', 'verification_approved', 'verification_rejected'
     ]
 
@@ -477,5 +477,5 @@ class Notification:
             read=data["read"],
             read_at=datetime.fromisoformat(data["readAt"].replace('Z', '+00:00')) if data.get("readAt") else None,
             target_id=UUID(data["targetId"]) if data["targetId"] is not None else None,
-            target_type=data["targetType"]
+            type=data["type"]
         )
