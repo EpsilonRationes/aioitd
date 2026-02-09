@@ -94,4 +94,31 @@ async def main():
         await client.update_profile(username="aioitd", banner_id=image.id)
 ```
 
+# Error429 и RateLimitError
+
+`Error429` возникает из-за ограничения количества запросов на сервер. Чтобы обойти, нужно соблюдать интервал между запросами.
+Его можно указать в `time_delta`, и по умолчанию он равен 0.105 секунд. 
+
+```python
+async with AsyncITDClient(refresh_token, time_delta=1)
+```
+
+Чтобы отключить задержку между запросами:
+
+```python 
+async with AsyncITDClient(refresh_token, time_delta=None)
+```
+
+
+`RateLimitError` ограничение по количеству определённых действий для каждого аккаунта.
+`retray_after` — через сколько можно повторить запрос.
+
+```python 
+while True:
+    try:
+        await client.post("content")
+    except RateLimitError as ex:
+        await asyncio.sleep(ex.retry_after)
+```
+
 Автор в итд [aioitd](https://итд.com/aioitd), тг [@rationessEps](https://t.me/rationessEps)
