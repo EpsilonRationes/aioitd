@@ -43,7 +43,7 @@ class Pin(ITDBaseModel):
 
 class BaseAuthor(ITDBaseModel):
     id: UUID
-    username: str
+    username: str | None
     display_name: Annotated[str, Field(alias="displayName")]
 
 
@@ -63,7 +63,7 @@ class AuthorWithoutId(ITDBaseModel):
     avatar: str
     pin: Pin | None
     verified: bool
-    username: str
+    username: str | None
     display_name: Annotated[str, Field(alias="displayName")]
 
 
