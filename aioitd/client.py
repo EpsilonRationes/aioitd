@@ -64,10 +64,6 @@ def valid_file_mimetype(path: str) -> bool:
     return mimetype in ["video", 'image', 'audio']
 
 
-def datetime_to_str(dt: datetime) -> str:
-    return dt.isoformat().replace('+00:00', 'Z')
-
-
 class FetchInterval:
     """Рассчитывает задержку между запросами
 
@@ -679,7 +675,8 @@ class AsyncITDClient:
         validate_limit(limit)
         result = await self.get(
             f"api/posts/user/{username}/liked",
-            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
+            params={"sort": "new", "limit": limit} | (
+                {} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
         )
         data = result.json()["data"]
         pagination = models.TimePagination(**data["pagination"])
@@ -705,7 +702,8 @@ class AsyncITDClient:
         validate_limit(limit)
         result = await self.get(
             f"api/posts/user/{username}/wall",
-            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
+            params={"sort": "new", "limit": limit} | (
+                {} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
         )
         data = result.json()["data"]
         pagination = models.TimePagination(**data["pagination"])
@@ -1374,3 +1372,28 @@ class AsyncITDClient:
     async def delete_pin(self) -> None:
         """Убрать пин."""
         await self.delete("api/users/me/pin")
+
+    async def get_privacy(self) -> models.Privacy:
+        """Получить настройки приватности текущего пользователя."""
+        result = await self.get(f"api/users/me/privacy")
+        data = result.json()
+        return models.Privacy(**data)
+
+    async def update_privacy(
+            self,
+            is_private: bool | None = None,
+            likes_visibility: Literal["everyone", "followers", "mutual", "nobody"] | None = None,
+            wall_access: Literal["everyone", "followers", "mutual", "nobody"] | None = None
+    ) -> models.Privacy:
+        """Изменить настройки приватности текущего пользователя."""
+        params = {}
+        if is_private is not None:
+            params["isPrivate"] = is_private
+        if likes_visibility is not None:
+            params["likesVisibility"] = likes_visibility
+        if wall_access is not None:
+            params["wallAccess"] = wall_access
+
+        result = await self.put(f"api/users/me/privacy", params)
+        data = result.json()
+        return models.Privacy(**data)

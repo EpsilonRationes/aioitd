@@ -42,4 +42,10 @@ class TestUsers(unittest.IsolatedAsyncioTestCase):
         async with AsyncITDClient(refresh_token) as itd:
             pins = await itd.get_pins()
 
+    async def test_get_privacy(self):
+        async with AsyncITDClient(refresh_token) as itd:
+            privacy = await itd.get_privacy()
 
+    async def test_update_privacy(self):
+        async with AsyncITDClient(refresh_token) as itd:
+            privacy = await itd.update_privacy(likes_visibility="followers")

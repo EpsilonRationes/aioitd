@@ -109,6 +109,7 @@ class ImageCommentAttachment(ITDBaseModel):
     width: int
     height: int
 
+
 class VideoCommentAttachment(ITDBaseModel):
     duration: None
     filename: str
@@ -300,7 +301,7 @@ class BaseFullUser(Author):
     banner: str | None
     created_at: Annotated[datetime, Field(alias="createdAt")]
     posts_count: Annotated[int, Field(alias="postsCount")]
-    wall_access: Annotated[str, Field(alias="wallAccess")]
+    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
     following_count: Annotated[int, Field(alias="followingCount")]
     followers_count: Annotated[int, Field(alias="followersCount")]
     likes_visibility: Annotated[str, Field(alias="likesVisibility")]
@@ -361,3 +362,9 @@ class File(ITDBaseModel):
 
 class GetFile(File):
     created_at: Annotated[datetime, Field(alias="createdAt")]
+
+
+class Privacy(ITDBaseModel):
+    is_private: Annotated[bool, Field(alias="isPrivate")]
+    likes_visibility: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='likesVisibility')]
+    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='wallAccess')]
