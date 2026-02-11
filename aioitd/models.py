@@ -351,8 +351,6 @@ class Notification(ITDBaseModel):
     ]
 
 
-# TODO COmment attachemtns
-
 class File(ITDBaseModel):
     id: UUID
     filename: str
