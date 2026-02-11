@@ -86,6 +86,9 @@ class InvalidOldPasswordError(ITDError):
     code = "INVALID_OLD_PASSWORD"
 
 
+class UploadError(ITDError):
+    code = "UPLOAD_ERROR"
+
 class ParamsValidationError(ITDError):
     def __init__(self, type: str, on: str, found: dict[str, str]):
         self.type = type
@@ -141,7 +144,7 @@ itd_exceptions = [
     RateLimitError,
     UnknowError,
     ServerError,
-
+    UploadError
 ]
 
 itd_codes = {}

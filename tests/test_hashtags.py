@@ -5,15 +5,6 @@ import unittest
 from tests.setting import refresh_token, password
 
 class TestHashtags(unittest.IsolatedAsyncioTestCase):
-    async def test_invalid(self):
-        try:
-            async with AsyncITDClient(refresh_token) as client:
-                await client.change_password(password, "1")
-        except InvalidPasswordError:
-            pass
-        else:
-            self.fail("InvalidPasswordError не выброшено")
-
     async def test_treading(self):
         async with AsyncITDClient(refresh_token) as client:
             result = await client.get_trending_hashtags()

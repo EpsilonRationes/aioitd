@@ -20,7 +20,8 @@ class TestPosts(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_following_posts(self):
         async with AsyncITDClient(refresh_token) as client:
-            pagination, posts = await client.get_following_posts()
+            pagination, posts = await client.get_following_posts(limit=2)
+            pagination, posts = await client.get_following_posts(pagination.next_cursor, limit=2)
 
     @assert_async_raises(ValidationError)
     async def test_get_following_posts_limit(self):
@@ -30,6 +31,7 @@ class TestPosts(unittest.IsolatedAsyncioTestCase):
     async def test_get_post(self):
         async with AsyncITDClient(refresh_token) as client:
             posts = await client.get_post(post_id)
+            print(posts)
 
     @assert_async_raises(NotFoundError)
     async def test_get_deleted_post(self):
@@ -236,12 +238,28 @@ class TestPosts(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_posts_by_user_wall(self):
         async with AsyncITDClient(refresh_token) as client:
-            pagination, posts = await client.get_posts_by_user_wall("nowkie")
+            pagination, posts = await client.get_posts_by_user_wall("blue_cir")
+
+    async def test_get_post_popular_comments(self):
+        async with AsyncITDClient(refresh_token) as client:
+            pagination, comments = await client.get_post_popular_comments(post_id)
+            pagination, comments = await client.get_post_popular_comments(post_id, cursor=pagination.next_cursor)
+
+    async def test_get_post_newest_comments(self):
+        async with AsyncITDClient(refresh_token) as client:
+            pagination, comments = await client.get_post_newest_comments(post_id)
+            pagination, comments = await client.get_post_newest_comments(post_id, cursor=pagination.next_cursor)
+
+    async def test_get_post_oldest_comments(self):
+        async with AsyncITDClient(refresh_token) as client:
+            pagination, comments = await client.get_post_oldest_comments(post_id)
+            pagination, comments = await client.get_post_oldest_comments(post_id, cursor=pagination.next_cursor)
 
     async def test_get_post_comments(self):
         async with AsyncITDClient(refresh_token) as client:
             for sort in ["popular", "newest", "oldest"]:
-                pagination, comments = await client.get_post_comments(post_id, sort=sort)
+                pagination, comments = await client.get_post_comments("d96edabe-8486-446e-9709-6f0dfad3a333", sort=sort)
+                pagination, comments = await client.get_post_comments("d96edabe-8486-446e-9709-6f0dfad3a333", sort=sort, cursor=pagination.next_cursor)
 
     async def test_create_post(self):
         async with AsyncITDClient(refresh_token) as client:

@@ -11,10 +11,11 @@ import asyncio
 
 from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, ValidationError, ITDError, \
     itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError, Error429
-from aioitd.models import File, HashTag, UUIDPagination, Post, IntPagination, TimePagination, FullPost, \
-    CommentPagination, Comment, User, Report, Me, FullUser, Privacy, FollowUser, Clan, Notification, PinWithDate
 
+from aioitd import models
 import httpx
+
+from aioitd.models import datetime_to_itd_format
 
 
 def decode_jwt_payload(jwt_token: str) -> dict[str, Any]:
@@ -73,6 +74,7 @@ class FetchInterval:
     Attributes:
         time_delta: минимальная задержка между запросами
     """
+
     def __init__(self, time_delta: float | int = 0.105):
         self.time_delta = time_delta
         self.last_fetch = 0
@@ -84,9 +86,10 @@ class FetchInterval:
         t = time.time()
         last_fetch = self.last_fetch
         if t - last_fetch < self.time_delta:
-            self.last_fetch =  last_fetch + self.time_delta
+            self.last_fetch = last_fetch + self.time_delta
             await asyncio.sleep(self.time_delta - t + last_fetch)
         self.last_fetch = time.time()
+
 
 class AsyncITDClient:
     """
@@ -135,9 +138,7 @@ class AsyncITDClient:
         return self
 
     async def start(self):
-        await self.refresh()
-        self.me = await self.get_me()
-        self.id = self.me.id
+        pass
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await self.close()
@@ -268,7 +269,7 @@ class AsyncITDClient:
         self.access_token = result.json()["accessToken"]
         return self.access_token
 
-    async def upload_file(self, file: IO[bytes], validate_mimetype: bool = True) -> File:
+    async def upload_file(self, file: IO[bytes], validate_mimetype: bool = True) -> models.File:
         """Загрузить файл.
 
         Args:
@@ -279,13 +280,14 @@ class AsyncITDClient:
             UnauthorizedError: неверный access токен
             ValidationError: недопустимый тип файла
             TooLargeError: размер запроса слишком большой
+            UploadError: ошибка загрузки файла
         """
         if validate_mimetype and not valid_file_mimetype(file.name):
             raise ValidationError(ValidationError.code, 'Недопустимый тип файла')
         result = await self.post("api/files/upload", files={'file': file}, timeout=self.upload_file_timeout)
-        return File.from_json(result.json())
+        return models.File(**result.json())
 
-    async def get_file(self, file_id: UUID | str) -> File:
+    async def get_file(self, file_id: UUID | str) -> models.GetFile:
         """Получить файл.
 
         Args:
@@ -298,7 +300,7 @@ class AsyncITDClient:
         if isinstance(file_id, str):
             file_id = UUID(file_id)
         result = await self.get(f"api/files/{file_id}")
-        return File.from_json(result.json())
+        return models.GetFile(**result.json())
 
     async def delete_file(self, file_id: UUID | str):
         """Удалить файл
@@ -314,7 +316,7 @@ class AsyncITDClient:
             file_id = UUID(file_id)
         await self.delete(f"api/files/{file_id}")
 
-    async def get_trending_hashtags(self, limit: int = 10) -> list[HashTag]:
+    async def get_trending_hashtags(self, limit: int = 10) -> list[models.Hashtag]:
         """Получить популярные хештеги.
 
         Args:
@@ -327,13 +329,9 @@ class AsyncITDClient:
         validate_limit(limit)
         result = await self.get("api/hashtags/trending", params={"limit": limit})
         data = result.json()["data"]
-        hashtags = []
-        for hashtag in data["hashtags"]:
-            hashtags.append(HashTag.from_json(hashtag))
+        return list(map(lambda hashtag: models.Hashtag(**hashtag), data["hashtags"]))
 
-        return hashtags
-
-    async def search_hashtags(self, query: str, limit: int = 20) -> list[HashTag]:
+    async def search_hashtags(self, query: str, limit: int = 20) -> list[models.Hashtag]:
         """Найти хештеги.
 
         Args:
@@ -350,17 +348,12 @@ class AsyncITDClient:
             raise ValidationError(ValidationError.code, "Длина запроса должна быть не более 100")
         result = await self.get(f"api/hashtags", params={"q": query, "limit": limit})
         data = result.json()["data"]
-
-        hashtags = []
-        for hashtag in data["hashtags"]:
-            hashtags.append(HashTag.from_json(hashtag))
-
-        return hashtags
+        return list(map(lambda hashtag: models.Hashtag(**hashtag), data["hashtags"]))
 
     async def get_posts_by_hashtag(
             self, hashtag_name: str, cursor: UUID | str | None = None,
             limit: int = 20
-    ) -> tuple[HashTag, UUIDPagination, list[Post]]:
+    ) -> tuple[models.Hashtag, models.UUIDPagination, list[models.Post]]:
         """Посты по хештегу.
 
         Args:
@@ -380,7 +373,7 @@ class AsyncITDClient:
         try:
             result = await self.get(
                 f"api/hashtags/{hashtag_name}/posts",
-                params={"limit": limit} | ({} if cursor is None else {"cursor": cursor})
+                params={"limit": limit} | ({} if cursor is None else {"cursor": str(cursor)})
 
             )
         except NotFoundError:
@@ -390,18 +383,20 @@ class AsyncITDClient:
         hashtag = data["hashtag"]
         if hashtag is None:
             raise NotFoundError("NOT_FOUND", f"Хештег {hashtag_name} не найден")
-        hashtag = HashTag.from_json(hashtag)
+        hashtag = models.Hashtag(**hashtag)
 
-        pagination = UUIDPagination.from_json(data["pagination"])
+        pagination = models.UUIDPagination(**data["pagination"])
 
-        posts = list(map(Post.from_json, data["posts"]))
+        posts = list(map(lambda post: models.Post(**post), data["posts"]))
 
         return hashtag, pagination, posts
 
     async def get_popular_posts(
-            self, cursor: int | None = None, limit: int = 20
-    ) -> tuple[IntPagination, list[Post]]:
-        """Получить посты, лента.
+            self,
+            cursor: int | None = None,
+            limit: int = 20
+    ) -> tuple[models.IntPagination, list[models.PopularPost]]:
+        """Получить популярные посты, лента.
 
         Args:
             cursor: Номер страницы
@@ -418,15 +413,15 @@ class AsyncITDClient:
         )
         data = result.json()["data"]
 
-        pagination = IntPagination.from_json(data["pagination"])
+        pagination = models.IntPagination(**data["pagination"])
 
-        posts = list(map(Post.from_json, data["posts"]))
+        posts = list(map(lambda post: models.PopularPost(**post), data["posts"]))
 
         return pagination, posts
 
     async def get_following_posts(
             self, cursor: datetime | None = None, limit: int = 20
-    ) -> tuple[TimePagination, list[Post]]:
+    ) -> tuple[models.TimePagination, list[models.Post]]:
         """Посты подписок
 
         Args:
@@ -442,17 +437,17 @@ class AsyncITDClient:
         result = await self.get(
             f"api/posts",
             params={"limit": limit, "tab": "following"} | (
-                {} if cursor is None else {"cursor": datetime_to_str(cursor)})
+                {} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
         )
         data = result.json()["data"]
 
-        pagination = TimePagination.from_json(data["pagination"])
+        pagination = models.TimePagination(**data["pagination"])
 
-        posts = list(map(Post.from_json, data["posts"]))
+        posts = list(map(lambda post: models.Post(**post), data["posts"]))
 
         return pagination, posts
 
-    async def get_post(self, post_id: UUID | str) -> FullPost:
+    async def get_post(self, post_id: UUID | str) -> models.FullPost:
         """Получить пост.
 
         Args:
@@ -467,7 +462,7 @@ class AsyncITDClient:
 
         result = await self.get(f"api/posts/{post_id}")
 
-        return FullPost.from_json(result.json()["data"])
+        return models.FullPost(**result.json()["data"])
 
     async def delete_post(self, post_id: UUID | str) -> None:
         """Удалить пост.
@@ -588,7 +583,7 @@ class AsyncITDClient:
         result = await self.delete(f"api/posts/{post_id}/pin")
         return result.json()["success"]
 
-    async def repost(self, post_id: UUID | str, content: str = "") -> Post:
+    async def repost(self, post_id: UUID | str, content: str = "") -> models.PostWithoutAuthorId:
         """Репост.
 
         Args:
@@ -609,12 +604,11 @@ class AsyncITDClient:
 
         result = await self.post(f"api/posts/{post_id}/repost", json={"content": content})
         data = result.json()
-        data["author"]["id"] = str(self.id)
-        return Post.from_json(data)
+        return models.PostWithoutAuthorId(**data)
 
     async def get_posts_by_user(
             self, username: str, cursor: datetime | None = None, limit: int = 20, sort: Literal["new"] = "new"
-    ) -> tuple[TimePagination, list[Post]]:
+    ) -> tuple[models.TimePagination, list[models.UserPost]]:
         """Посты на стене пользователя. Отсортированы по дате публикации
 
         Args:
@@ -631,17 +625,18 @@ class AsyncITDClient:
         validate_limit(limit)
         result = await self.get(
             f"api/posts/user/{username}",
-            params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_str(cursor)})
+            params={"sort": sort, "limit": limit} | (
+                {} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
         )
         data = result.json()["data"]
-        pagination = TimePagination.from_json(data["pagination"])
-        posts = list(map(Post.from_json, data["posts"]))
+        pagination = models.TimePagination(**data["pagination"])
+        posts = list(map(lambda post: models.UserPost(**post), data["posts"]))
 
         return pagination, posts
 
     async def get_posts_by_user_popular(
             self, username: str, cursor: int | None = None, limit: int = 20, sort: Literal["popular"] = "popular"
-    ) -> tuple[IntPagination, list[Post]]:
+    ) -> tuple[models.IntPagination, list[models.UserPost]]:
         """Посты на стене пользователя. Отсортированы по популярности.
 
         Args:
@@ -658,18 +653,17 @@ class AsyncITDClient:
         validate_limit(limit)
         result = await self.get(
             f"api/posts/user/{username}",
-            params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": cursor})
+            params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": str(cursor)})
         )
-
         data = result.json()["data"]
-        pagination = IntPagination.from_json(data["pagination"])
-        posts = list(map(Post.from_json, data["posts"]))
+        pagination = models.IntPagination(**data["pagination"])
+        posts = list(map(lambda post: models.UserPost(**post), data["posts"]))
 
         return pagination, posts
 
     async def get_posts_by_user_liked(
             self, username: str, cursor: datetime | None = None, limit: int = 20
-    ) -> tuple[TimePagination, list[Post]]:
+    ) -> tuple[models.TimePagination, list[models.Post]]:
         """Посты на которые пользователей поставил лайк.
 
         Args:
@@ -685,17 +679,17 @@ class AsyncITDClient:
         validate_limit(limit)
         result = await self.get(
             f"api/posts/user/{username}/liked",
-            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_str(cursor)})
+            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
         )
         data = result.json()["data"]
-        pagination = TimePagination.from_json(data["pagination"])
-        posts = list(map(Post.from_json, data["posts"]))
+        pagination = models.TimePagination(**data["pagination"])
+        posts = list(map(lambda post: models.Post(**post), data["posts"]))
 
         return pagination, posts
 
     async def get_posts_by_user_wall(
             self, username: str, cursor: datetime | None = None, limit: int = 20
-    ) -> tuple[TimePagination, list[Post]]:
+    ) -> tuple[models.TimePagination, list[models.UserPost]]:
         """Посты на стене пользователя, сделанные не пользователем.
 
         Args:
@@ -711,21 +705,21 @@ class AsyncITDClient:
         validate_limit(limit)
         result = await self.get(
             f"api/posts/user/{username}/wall",
-            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_str(cursor)})
+            params={"sort": "new", "limit": limit} | ({} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
         )
         data = result.json()["data"]
-        pagination = TimePagination.from_json(data["pagination"])
-        posts = list(map(Post.from_json, data["posts"]))
+        pagination = models.TimePagination(**data["pagination"])
+        posts = list(map(lambda post: models.UserPost(**post), data["posts"]))
 
         return pagination, posts
 
     async def get_post_comments(
             self,
             post_id: UUID | str,
-            cursor: int | None = None,
+            cursor: str | None = None,
             sort: Literal["popular", "newest", "oldest"] = "popular",
             limit: int = 20
-    ) -> tuple[CommentPagination, list[Comment]]:
+    ) -> tuple[models.CommentPagination, list[models.Comment]]:
         """Получить комментарии под постом.
 
         Args:
@@ -747,8 +741,106 @@ class AsyncITDClient:
             params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": cursor})
         )
         data = result.json()["data"]
-        pagination = CommentPagination.from_json(data)
-        comments = list(map(Comment.from_json, data["comments"]))
+        comments = list(map(lambda comment: models.Comment(**comment), data["comments"]))
+        del data['comments']
+        pagination = models.CommentPagination(**data)
+        return pagination, comments
+
+    async def get_post_popular_comments(
+            self,
+            post_id: UUID | str,
+            cursor: int | None = None,
+            limit: int = 20
+    ) -> tuple[models.IntCommentPagination, list[models.Comment]]:
+        """Получить популярные комментарии под постом.
+
+        Args:
+            post_id: UUID поста
+            cursor: номер последнего комментария на предыдущей странице
+            limit: максимальное количество комментариев на странице
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+            ValidationError: 1 <= limit <= 50
+        """
+        validate_limit(limit)
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+        result = await self.get(
+            f"api/posts/{post_id}/comments",
+            params={"sort": "popular", "limit": limit} | ({} if cursor is None else {"cursor": str(cursor)})
+        )
+        data = result.json()["data"]
+        comments = list(map(lambda comment: models.Comment(**comment), data["comments"]))
+        del data['comments']
+        pagination = models.IntCommentPagination(**data)
+        return pagination, comments
+
+    async def get_post_newest_comments(
+            self,
+            post_id: UUID | str,
+            cursor: UUID | str | None = None,
+            limit: int = 20
+    ) -> tuple[models.UUIDCommentPagination, list[models.Comment]]:
+        """Получить новые комментарии под постом.
+
+        Args:
+            post_id: UUID поста
+            cursor: номер последнего комментария на предыдущей странице
+            limit: максимальное количество комментариев на странице
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+            ValidationError: 1 <= limit <= 50
+        """
+        validate_limit(limit)
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+        if isinstance(cursor, str):
+            cursor = UUID(cursor)
+        result = await self.get(
+            f"api/posts/{post_id}/comments",
+            params={"sort": "newest", "limit": limit} | ({} if cursor is None else {"cursor": str(cursor)})
+        )
+        data = result.json()["data"]
+        comments = list(map(lambda comment: models.Comment(**comment), data["comments"]))
+        del data['comments']
+        pagination = models.UUIDCommentPagination(**data)
+        return pagination, comments
+
+    async def get_post_oldest_comments(
+            self,
+            post_id: UUID | str,
+            cursor: UUID | str | None = None,
+            limit: int = 20
+    ) -> tuple[models.UUIDCommentPagination, list[models.Comment]]:
+        """Получить старые комментарии под постом.
+
+        Args:
+            post_id: UUID поста
+            cursor: номер последнего комментария на предыдущей странице
+            limit: максимальное количество комментариев на странице
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            NotFoundError: Пост не найден
+            ValidationError: 1 <= limit <= 50
+        """
+        validate_limit(limit)
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+        if isinstance(cursor, str):
+            cursor = UUID(cursor)
+        result = await self.get(
+            f"api/posts/{post_id}/comments",
+            params={"sort": "oldest", "limit": limit} | ({} if cursor is None else {"cursor": str(cursor)})
+        )
+        data = result.json()["data"]
+        comments = list(map(lambda comment: models.Comment(**comment), data["comments"]))
+        del data['comments']
+        pagination = models.UUIDCommentPagination(**data)
         return pagination, comments
 
     async def create_post(
@@ -756,7 +848,7 @@ class AsyncITDClient:
             content: str,
             attachment_ids: list[UUID | str] | None = None,
             wall_recipient_id: UUID | str = None
-    ) -> Post:
+    ) -> models.UserPostWithoutAuthorId:
         """Создать пост.
 
         Args:
@@ -768,6 +860,7 @@ class AsyncITDClient:
             ValidationError: len(content) <= 5_000
             ValidationError: len(attachments_ids) <= 10
             ValidationError: Нельзя создать пост content="", attachment_ids = []
+            NotFoundError: пользователь не найден
         """
         if len(content) > 5_000:
             raise ValidationError(ValidationError.code, "Максимальная длина content 5_000")
@@ -787,10 +880,10 @@ class AsyncITDClient:
             ({} if wall_recipient_id is None else {"wallRecipientId": str(wall_recipient_id)})
         )
         data = result.json()
-        data["author"]["id"] = str(self.id)
-        return Post.from_json(data)
 
-    async def update_post(self, post_id: UUID | str, content: str) -> str:
+        return models.UserPostWithoutAuthorId(**data)
+
+    async def update_post(self, post_id: UUID | str, content: str) -> models.UpdatePostResponse:
         """Изменить пост
 
         Args:
@@ -813,9 +906,11 @@ class AsyncITDClient:
         result = await self.put(f"api/posts/{post_id}", {"content": content})
         data = result.json()
 
-        return data["content"]
+        return models.UpdatePostResponse(**data)
 
-    async def comment(self, post_id: UUID | str, content: str = "", attachment_ids: list[UUID | str] | None = None):
+    async def comment(
+            self, post_id: UUID | str, content: str = "", attachment_ids: list[UUID | str] | None = None
+    ) -> models.BaseComment:
         """Создать комментарий.
 
         Args:
@@ -845,7 +940,7 @@ class AsyncITDClient:
             {"content": content, "attachmentIds": list(map(str, attachment_ids))}
         )
         data = result.json()
-        return Comment.from_json(data)
+        return models.BaseComment(**data)
 
     async def delete_comment(self, comment_id: UUID | str) -> None:
         """Удалить комментарий.
@@ -917,7 +1012,7 @@ class AsyncITDClient:
             content: str,
             replay_to_user_id: UUID | str | None = None,
             attachment_ids: list[UUID | str] | None = None
-    ) -> Comment:
+    ) -> models.ReplyComment:
         """Ответить на комментарий
 
         Args:
@@ -953,15 +1048,14 @@ class AsyncITDClient:
             | ({} if replay_to_user_id is None else {"replayToUserId": str(replay_to_user_id)})
         )
         data = result.json()
-        data['repliesCount'] = 0
-        return Comment.from_json(data)
+        return models.ReplyComment(**data)
 
     async def search(
             self,
             query: str,
             user_limit: int = 20,
             hashtag_limit: int = 20
-    ) -> tuple[list[HashTag], list[User]]:
+    ) -> tuple[list[models.Hashtag], list[models.User]]:
         """Поиск
 
         Args:
@@ -980,12 +1074,12 @@ class AsyncITDClient:
 
         data = result.json()["data"]
 
-        hashtags = list(map(HashTag.from_json, data["hashtags"]))
-        users = list(map(User.from_json, data["users"]))
+        hashtags = list(map(lambda hashtag: models.Hashtag(**hashtag), data["hashtags"]))
+        users = list(map(lambda user: models.User(**user), data["users"]))
 
         return users, hashtags
 
-    async def search_users2(self, query: str, user_limit: int = 20) -> list[User]:
+    async def search_users2(self, query: str, user_limit: int = 20) -> list[models.User]:
         """Поиск пользователей
 
         Args:
@@ -1002,11 +1096,11 @@ class AsyncITDClient:
         )
         data = result.json()["data"]
 
-        users = list(map(User.from_json, data["users"]))
+        users = list(map(lambda user: models.User(**user), data["users"]))
 
         return users
 
-    async def search_hashtags2(self, query: str, hashtag_limit: int = 20) -> list[User]:
+    async def search_hashtags2(self, query: str, hashtag_limit: int = 20) -> list[models.Hashtag]:
         """Поиск хештегов
 
         Args:
@@ -1023,7 +1117,7 @@ class AsyncITDClient:
         )
         data = result.json()["data"]
 
-        users = list(map(User.from_json, data["users"]))
+        users = list(map(lambda hashtag: models.Hashtag(**hashtag), data["hashtags"]))
 
         return users
 
@@ -1033,7 +1127,7 @@ class AsyncITDClient:
             target_type: Literal["post", "comment", "user"] = "user",
             reason: Literal["spam", "violence", "hate", "adult", "fraud", "other"] = "other",
             description: str = "",
-    ) -> Report:
+    ) -> models.Report:
         """Отправить репорт.
 
         Args:
@@ -1049,7 +1143,7 @@ class AsyncITDClient:
             {"targetId": str(target_id), "targetType": target_type, "reason": reason, "description": description}
         )
         data = result.json()["data"]
-        return Report.from_json(data)
+        return models.Report(**data)
 
     async def update_profile(
             self,
@@ -1057,7 +1151,7 @@ class AsyncITDClient:
             display_name: str | None = None,
             username: str | None = None,
             banner_id: UUID | str | None = None
-    ) -> Me:
+    ) -> models.Me:
         """Обновить профиль.
 
         Args:
@@ -1080,9 +1174,9 @@ class AsyncITDClient:
 
         result = await self.put("api/users/me", json)
         data = result.json()
-        return Me.from_json(data)
+        return models.Me(**data)
 
-    async def get_user(self, username: str) -> FullUser:
+    async def get_user(self, username: str) -> models.FullUser:
         """Получить данные пользователя.
 
         Args:
@@ -1090,33 +1184,13 @@ class AsyncITDClient:
         """
         result = await self.get(f"api/users/{username}")
         data = result.json()
-        return FullUser.from_json(data)
+        return models.FullUser(**data)
 
-    async def get_me(self) -> FullUser:
+    async def get_me(self) -> models.FullMe:
         """Получить данные текущего пользователя"""
         result = await self.get(f"api/users/me")
         data = result.json()
-        data['isFollowing'] = False
-        data['isFollowedBy'] = False
-        return FullUser.from_json(data)
-
-    async def get_privacy(self) -> Privacy:
-        """Получить настройки приватности текущего пользователя."""
-        result = await self.get(f"api/users/me/privacy")
-        data = result.json()
-        return Privacy.from_json(data)
-
-    async def update_privacy(self, wall_closed: bool | None = None, is_private: bool | None = None) -> Privacy:
-        """Изменить настройки приватности текущего пользователя."""
-        params = {}
-        if is_private is not None:
-            params["isPrivate"] = is_private
-        if wall_closed is not None:
-            params["wall_closed"] = wall_closed
-
-        result = await self.put(f"api/users/me/privacy", params)
-        data = result.json()
-        return Privacy.from_json(data)
+        return models.FullMe(**data)
 
     async def follow(self, username: str) -> int:
         """Подписаться на пользователя
@@ -1145,7 +1219,7 @@ class AsyncITDClient:
             username: str,
             page: int = 1,
             limit: int = 30
-    ) -> tuple[IntPagination, list[FollowUser]]:
+    ) -> tuple[models.FollowPagination, list[models.FollowUser]]:
         """Получить подписчиков пользователя.
 
         Args:
@@ -1155,8 +1229,8 @@ class AsyncITDClient:
         """
         result = await self.get(f"api/users/{username}/followers", params={"limit": limit, "page": page})
         data = result.json()["data"]
-        pagination = IntPagination.from_json(data['pagination'])
-        users = list(map(FollowUser.from_json, data["users"]))
+        pagination = models.FollowPagination(**data['pagination'])
+        users = list(map(lambda user: models.FollowUser(**user), data["users"]))
 
         return pagination, users
 
@@ -1165,7 +1239,7 @@ class AsyncITDClient:
             username: str,
             page: int = 1,
             limit: int = 30
-    ) -> tuple[IntPagination, list[FollowUser]]:
+    ) -> tuple[models.FollowPagination, list[models.FollowUser]]:
         """Получить подписки пользователя.
 
         Args:
@@ -1175,26 +1249,26 @@ class AsyncITDClient:
         """
         result = await self.get(f"api/users/{username}/following", params={"limit": limit, "page": page})
         data = result.json()["data"]
-        pagination = IntPagination.from_json(data['pagination'])
-        users = list(map(FollowUser.from_json, data["users"]))
+        pagination = models.FollowPagination(**data['pagination'])
+        users = list(map(lambda user: models.FollowUser(**user), data["users"]))
 
         return pagination, users
 
-    async def get_top_clans(self) -> list[Clan]:
+    async def get_top_clans(self) -> list[models.Clan]:
         """Получить топ кланов."""
         result = await self.get('api/users/stats/top-clans')
         data = result.json()
-        return list(map(Clan.from_json, data["clans"]))
+        return list(map(lambda clan: models.Clan(**clan), data["clans"]))
 
-    async def get_who_to_follow(self) -> list[User]:
+    async def get_who_to_follow(self) -> list[models.User]:
         """Получить топ по подпискам."""
         result = await self.get('api/users/suggestions/who-to-follow')
         data = result.json()
-        return list(map(User.from_json, data["users"]))
+        return list(map(lambda user: models.User(**user), data["users"]))
 
     class NotificationsResponse(NamedTuple):
         has_more: bool
-        notifications: list[Notification]
+        notifications: list[models.Notification]
 
     async def get_notifications(self, offset: int = 0, limit: int = 30) -> NotificationsResponse:
         """Получить уведомления.
@@ -1202,13 +1276,13 @@ class AsyncITDClient:
         Args:
             offset: сдвиг
             limit: максимально количество уведомлений в ответе
-
-        Returns:
-
         """
         result = await self.get("api/notifications/", params={"limit": limit, "offset": offset})
         data = result.json()
-        return self.NotificationsResponse(data["hasMore"], list(map(Notification.from_json, data["notifications"])))
+        return self.NotificationsResponse(
+            data["hasMore"],
+            list(map(lambda notification: models.Notification(**notification), data["notifications"]))
+        )
 
     async def read_batch_notifications(self, notifications_ids: list[UUID | str]) -> int:
         """Пометить прочитанными несколько уведомлений.
@@ -1260,7 +1334,7 @@ class AsyncITDClient:
         result = await self.post("api/verification/submit", {"videoUrl": video_url})
         return result.json()
 
-    async def search_users(self, query: str, limit: int = 20):
+    async def search_users(self, query: str, limit: int = 20) -> list[models.User]:
         """Поиск пользователей.
 
         Args:
@@ -1274,17 +1348,17 @@ class AsyncITDClient:
         result = await self.get(f"api/users/search", params={"q": query, "limit": limit})
         data = result.json()["data"]
 
-        return list(map(User.from_json, data['users']))
+        return list(map(lambda user: models.User(**user), data['users']))
 
     class PinsResponse(NamedTuple):
-        active_pin: str
-        pins: list[PinWithDate]
+        active_pin: str | None
+        pins: list[models.PinWithDate]
 
     async def get_pins(self) -> PinsResponse:
         """Получить список пин'ов и текущий пин"""
         result = await self.get("api/users/me/pins")
         data = result.json()["data"]
-        return self.PinsResponse(data['activePin'], list(map(PinWithDate.from_json, data["pins"])))
+        return self.PinsResponse(data['activePin'], list(map(lambda pin: models.PinWithDate(**pin), data["pins"])))
 
     async def set_pin(self, pin_slug: str) -> str:
         """Выбрать пин

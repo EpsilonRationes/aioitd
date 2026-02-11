@@ -23,7 +23,7 @@ class TestSearch(unittest.IsolatedAsyncioTestCase):
         async with AsyncITDClient(refresh_token) as client:
             result = await client.search_users2("q", 20)
 
-    async def test_search_hashtags(self):
+    async def test_search_hashtags2(self):
         async with AsyncITDClient(refresh_token) as client:
             result = await client.search_hashtags2("q", 20)
 
