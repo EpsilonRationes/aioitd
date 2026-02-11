@@ -145,11 +145,22 @@ class BasePostWithoutAuthorId(ITDBaseModel):
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
 
 
-class Span(ITDBaseModel):
+class BaseSpan(ITDBaseModel):
     length: int
+    offset: int
+
+
+class MentionSpan(BaseSpan):
+    type: Literal['mention']
+    username: str
+
+
+class HashTagSpan(BaseSpan):
     tag: str
     type: Literal['hashtag']
-    offset: int
+
+
+type Span = Annotated[MentionSpan | HashTagSpan, Field(discriminator='type')]
 
 
 class Counts(ITDBaseModel):
@@ -190,6 +201,19 @@ class Reply(Comment):
 
 class OriginalPost(BasePost, Counts):
     is_deleted: Annotated[bool, Field(alias="isDeleted")]
+
+
+class HashtagPost(BasePost, Counts):
+    is_liked: Annotated[bool, Field(alias="isLiked")]
+    comments: list[Comment]
+
+    wall_recipient_id: Annotated[None | UUID, Field(alias="wallRecipientId")] = None
+    wall_recipient: Annotated[None | WallRecipient, Field(alias="wallRecipient")]
+
+    is_reposted: Annotated[bool, Field(alias="isReposted")]
+    original_post: Annotated[OriginalPost | None, Field(alias="originalPost")]
+
+    is_owner: Annotated[bool, Field(alias="isOwner")]
 
 
 class Post(BasePost, Counts):

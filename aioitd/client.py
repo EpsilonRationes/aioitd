@@ -349,7 +349,7 @@ class AsyncITDClient:
     async def get_posts_by_hashtag(
             self, hashtag_name: str, cursor: UUID | str | None = None,
             limit: int = 20
-    ) -> tuple[models.Hashtag, models.UUIDPagination, list[models.Post]]:
+    ) -> tuple[models.Hashtag, models.UUIDPagination, list[models.HashtagPost]]:
         """Посты по хештегу.
 
         Args:
@@ -365,6 +365,8 @@ class AsyncITDClient:
         validate_limit(limit)
         if isinstance(cursor, str):
             cursor = UUID(cursor)
+        if len(hashtag_name) == 0:
+            raise NotFoundError("NOT_FOUND", f"Хештег (пустая строка) не найден")
 
         try:
             result = await self.get(
@@ -383,7 +385,7 @@ class AsyncITDClient:
 
         pagination = models.UUIDPagination(**data["pagination"])
 
-        posts = list(map(lambda post: models.Post(**post), data["posts"]))
+        posts = list(map(lambda post: models.HashtagPost(**post), data["posts"]))
 
         return hashtag, pagination, posts
 
