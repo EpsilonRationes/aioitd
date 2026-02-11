@@ -51,9 +51,12 @@ class WallRecipient(BaseAuthor):
     avatar: str
 
 
-class Author(WallRecipient):
-    pin: Pin | None
+class VerifiedUser(WallRecipient):
     verified: bool
+
+
+class Author(VerifiedUser):
+    pin: Pin | None
 
 
 class AuthorWithoutId(ITDBaseModel):
@@ -368,3 +371,14 @@ class Privacy(ITDBaseModel):
     is_private: Annotated[bool, Field(alias="isPrivate")]
     likes_visibility: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='likesVisibility')]
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='wallAccess')]
+
+
+class UserWithRole(VerifiedUser):
+    roles: list[str | Literal["user"]]
+    bio: str
+
+
+class Profile(ITDBaseModel):
+    authenticated: bool
+    banned: bool
+    user: UserWithRole

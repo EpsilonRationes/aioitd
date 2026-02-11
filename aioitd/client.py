@@ -1397,3 +1397,8 @@ class AsyncITDClient:
         result = await self.put(f"api/users/me/privacy", params)
         data = result.json()
         return models.Privacy(**data)
+
+    async def get_profile(self) -> models.Profile:
+        """Получить свой профиль."""
+        result = await self.get("api/profile")
+        return models.Profile(**result.json())
