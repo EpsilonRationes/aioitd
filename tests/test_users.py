@@ -53,3 +53,21 @@ class TestUsers(unittest.IsolatedAsyncioTestCase):
     async def test_profile(self):
         async with AsyncITDClient(refresh_token) as itd:
             profile = await itd.get_profile()
+
+    async def test_block_unblock(self):
+        async with AsyncITDClient(refresh_token) as itd:
+            await itd.block("nowkie")
+            await itd.unblock("nowkie")
+
+    async def test_get_user_blocked(self):
+        async with AsyncITDClient(refresh_token) as itd:
+            await itd.block("nowkie")
+            user = await itd.get_user("nowkie")
+
+    async def test_get_blocked_users(self):
+        async with AsyncITDClient(refresh_token) as itd:
+            pagination, users = await itd.get_blocked()
+
+    async def test_get_user_who_blocked_me(self):
+        async with AsyncITDClient(refresh_token) as itd:
+            user = await itd.get_user("FIRST_TM")

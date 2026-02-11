@@ -1174,7 +1174,7 @@ class AsyncITDClient:
         data = result.json()
         return models.Me(**data)
 
-    async def get_user(self, username: str) -> models.FullUser:
+    async def get_user(self, username: str) -> models.FullUser | models.BlockedUser | models.UserBlockMe:
         """Получить данные пользователя.
 
         Args:
@@ -1182,7 +1182,12 @@ class AsyncITDClient:
         """
         result = await self.get(f"api/users/{username}")
         data = result.json()
-        return models.FullUser(**data)
+        if 'isBlockedByMe' in data:
+            return models.BlockedUser(**data)
+        elif 'isBlockedByThem' in data:
+            return models.UserBlockMe(**data)
+        else:
+            return models.FullUser(**data)
 
     async def get_me(self) -> models.FullMe:
         """Получить данные текущего пользователя"""
@@ -1402,3 +1407,21 @@ class AsyncITDClient:
         """Получить свой профиль."""
         result = await self.get("api/profile")
         return models.Profile(**result.json())
+
+    async def block(self, username: str):
+        """Заблокировать пользователя."""
+        await self.post(f"api/users/{username}/block")
+
+    async def unblock(self, username: str):
+        """Разблокировать пользователя."""
+        await self.delete(f"api/users/{username}/block")
+
+    async def get_blocked(
+            self, page: int = 1, limit: int = 20
+    ) -> tuple[models.FollowPagination, list[models.BlockedAuthor]]:
+        """Получить заблокированных пользователей"""
+        result = await self.get("api/users/me/blocked", {"page": page, "limit": limit})
+        data = result.json()["data"]
+        pagination = models.FollowPagination(**data["pagination"])
+        users = list(map(lambda user: models.BlockedAuthor(**user), data["users"]))
+        return pagination, users

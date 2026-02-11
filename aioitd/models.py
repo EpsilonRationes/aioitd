@@ -312,6 +312,7 @@ class BaseFullUser(Author):
 
 class FullMe(BaseFullUser):
     is_private: Annotated[bool, Field(alias="isPrivate")]
+    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
 
 
 class FullUser(FullMe):
@@ -382,3 +383,24 @@ class Profile(ITDBaseModel):
     authenticated: bool
     banned: bool
     user: UserWithRole
+
+
+class BlockedUser(Author):
+    is_blocked_by_me: Annotated[bool, Field(alias="isBlockedByMe")]
+
+
+class BlockedAuthor(VerifiedUser):
+    blocked_at: Annotated[datetime, Field(alias="blockedAt")]
+
+
+class UserBlockMe(Author):
+    is_blocked_by_them: Annotated[bool, Field(alias="isBlockedByThem")]
+    is_private: Annotated[bool, Field(alias="isPrivate")]
+    s_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
+    is_following: Annotated[bool, Field(alias="isFollowing")]
+    following_count: Annotated[int, Field(alias="followingCount")]
+    followers_count: Annotated[int, Field(alias="followersCount")]
+    posts_count: Annotated[int, Field(alias="postsCount")]
+    pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
+    banner: str | None
+    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
