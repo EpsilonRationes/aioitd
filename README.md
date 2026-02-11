@@ -54,7 +54,6 @@ async with AsyncITDClient(refresh_token) as client:
 
 ```python 
 client = AsyncITDClient(refresh_token)
-await client.start()
 ...
 await client.close()
 ```
