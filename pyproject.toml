@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aioitd"
-version = "0.2.0"
+version = "0.2.2"
 authors = [
   { name="EpsilonRationes", email="rationess@gmal.com" },
 ]
@@ -17,7 +17,7 @@ classifiers = [
 ]
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
-dependencies = ["httpx", "pydantic"]
+dependencies = ["httpx", "pydantic", 'httpx-sse']
 
 [project.urls]
 github = "https://github.com/EpsilonRationes/aioitd"

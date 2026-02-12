@@ -1,6 +1,6 @@
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Callable, IO, Coroutine, Literal, NamedTuple, Any
+from typing import Callable, IO, Coroutine, Literal, NamedTuple, Any, AsyncGenerator, AsyncIterator
 import time
 import base64
 import json
@@ -8,6 +8,7 @@ import re
 from uuid import UUID
 import mimetypes
 import asyncio
+from contextlib import asynccontextmanager
 
 from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, ValidationError, ITDError, \
     itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError, Error429, \
@@ -15,9 +16,12 @@ from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordE
 
 from aioitd import models
 import httpx
+import httpx_sse
 
 from aioitd.models import datetime_to_itd_format
 
+
+ITD_CEE_PING = 15
 
 def decode_jwt_payload(jwt_token: str) -> dict[str, Any]:
     """Декодирует pyload jwt"""
@@ -1467,3 +1471,38 @@ class AsyncITDClient:
         pagination = models.FollowPagination(**data["pagination"])
         users = list(map(lambda user: models.BlockedAuthor(**user), data["users"]))
         return pagination, users
+
+    @staticmethod
+    async def _sse_wrapper(
+            aiter_see: Callable[[], AsyncGenerator[httpx_sse.ServerSentEvent, None]]
+    ) -> AsyncGenerator[models.ConnectedEvent | models.NotificationEvent | models.SSEEvent, None]:
+        async for sse in aiter_see():
+            if sse.event == "connected":
+                event = models.ConnectedEvent(**json.loads(sse.data))
+            elif sse.event == "notification":
+                event = models.NotificationEvent(**json.loads(sse.data))
+            else:
+                event = models.SSEEvent(event=sse.event, data=sse.data)
+            yield event
+
+    @asynccontextmanager
+    async def connect_sse(
+            self
+    ) -> AsyncGenerator[AsyncGenerator[models.ConnectedEvent | models.NotificationEvent | models.SSEEvent, None], None]:
+        """Подключиться к SEE стриму.
+
+        Raises:
+            SSEError: ошибка SSE
+        """
+        if is_token_expired(self.access_token):
+            await self.refresh()
+
+        async with httpx_sse.aconnect_sse(
+                self.session, "GET", f"https://{self.domain}/api/notifications/stream",
+                headers={"authorization": add_bearer(self.access_token)},
+                timeout=ITD_CEE_PING + 1
+        ) as event_source:
+            try:
+                yield self._sse_wrapper(event_source.aiter_sse)
+            finally:
+                pass
