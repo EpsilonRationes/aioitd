@@ -58,6 +58,8 @@ class VerifiedUser(WallRecipient):
 class Author(VerifiedUser):
     pin: Pin | None
 
+class AuthorWihtOnline(Author):
+    online: bool 
 
 class AuthorWithoutId(ITDBaseModel):
     avatar: str
@@ -157,10 +159,42 @@ class MentionSpan(BaseSpan):
 
 class HashTagSpan(BaseSpan):
     tag: str
-    type: Literal['hashtag']
+    type: Literal['hashtag'] = 'hashtag'
 
 
-type Span = Annotated[MentionSpan | HashTagSpan, Field(discriminator='type')]
+class MonospaceSpan(BaseSpan): 
+    type: Literal["monospace"] = "monospace"
+
+
+class StrikeSpan(BaseSpan):
+    type: Literal["strike"] = "strike"
+
+
+class UnderlineSpan(BaseSpan):
+    type: Literal["underline"] = "underline"
+
+
+class BoldSpan(BaseSpan):
+    type: Literal["bold"] = "bold"
+
+
+class ItalicSpan(BaseSpan):
+    type: Literal["italic"] = "italic"
+
+
+class SpoilerSpan(BaseSpan):
+    type: Literal["spoiler"] = "spoiler"
+
+
+class LinkSpan(BaseSpan):
+    type: Literal["link"] = "link" 
+    url: str
+
+
+type Span = Annotated[
+    MentionSpan | HashTagSpan | MonospaceSpan | StrikeSpan | UnderlineSpan | BoldSpan | ItalicSpan | SpoilerSpan | LinkSpan, 
+    Field(discriminator='type')
+]
 
 
 class Counts(ITDBaseModel):
@@ -219,6 +253,8 @@ class HashtagPost(BasePost, Counts):
 class Post(BasePost, Counts):
     is_liked: Annotated[bool, Field(alias="isLiked")]
     is_viewed: Annotated[bool, Field(alias="isViewed")]
+    author: AuthorWihtOnline
+    poll: Poll | None
 
     wall_recipient_id: Annotated[None | UUID, Field(alias="wallRecipientId")]
 
@@ -227,6 +263,9 @@ class Post(BasePost, Counts):
 
     is_owner: Annotated[bool, Field(alias="isOwner")]
 
+
+class LikedPost(Post):
+    author: Author
 
 class PostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
     is_liked: Annotated[bool, Field(alias="isLiked")]
@@ -240,11 +279,33 @@ class PostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
 
 
 class PopularPost(Post):
+    author: AuthorWihtOnline
+    poll: Poll | None
     author_id: Annotated[UUID, Field(alias="authorId")]
 
 
 class UserPost(Post):
+    author: Author
     wall_recipient: Annotated[None | WallRecipient, Field(alias="wallRecipient")]
+
+
+class Option(ITDBaseModel):
+    id: UUID 
+    position: int 
+    text: str 
+    votest_count: Annotated[int, Field(alias="votesCount")]
+
+
+class Poll(ITDBaseModel):
+    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
+    has_voted: Annotated[bool, Field(alias="hasVoted")]
+    id: UUID
+    multiple_hoice: Annotated[bool, Field(alias="multipleChoice")]
+    post_id: Annotated[UUID, Field(alias="postId")]
+    question: str 
+    total_votes: Annotated[int, Field(alias="totalVotes")]
+    voted_option_ids: Annotated[list[UUID], Field(alias="votedOptionIds")]
+    options: list[Option]
 
 
 class UserPostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
@@ -258,8 +319,16 @@ class UserPostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
 
     wall_recipient: Annotated[None | WallRecipient, Field(alias="wallRecipient")]
 
+    poll: Poll | None
+
+
+class LastSeen(ITDBaseModel):
+    unit: str 
+    value: int
+
 
 class FullPost(UserPost):
+    author: Author
     comments: list[Comment]
 
 
@@ -299,7 +368,7 @@ class UpdatePostResponse(ITDBaseModel):
     id: UUID
     content: str
     spans: list[Span]
-    updated_at: Annotated[datetime | None, Field(alias="updatedAt")]
+    updated_at: Annotated[ITDDatetime | None, Field(alias="updatedAt")]
 
 
 class Hashtag(ITDBaseModel):
@@ -315,23 +384,24 @@ class User(WallRecipient):
 
 class Report(ITDBaseModel):
     id: UUID
-    created_at: Annotated[datetime, Field(alias="createdAt")]
+    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
 
 
 class Me(BaseAuthor):
     bio: str
-    update_at: Annotated[datetime, Field(alias="updatedAt")]
+    update_at: Annotated[ITDDatetime, Field(alias="updatedAt")]
 
 
 class BaseFullUser(Author):
     bio: str
     banner: str | None
-    created_at: Annotated[datetime, Field(alias="createdAt")]
+    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
     posts_count: Annotated[int, Field(alias="postsCount")]
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
     following_count: Annotated[int, Field(alias="followingCount")]
     followers_count: Annotated[int, Field(alias="followersCount")]
     likes_visibility: Annotated[str, Field(alias="likesVisibility")]
+    
 
 
 class FullMe(BaseFullUser):
@@ -339,10 +409,13 @@ class FullMe(BaseFullUser):
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
 
 
-class FullUser(FullMe):
+class FullUser(BaseFullUser):
+    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
     is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
     is_following: Annotated[bool, Field(alias="isFollowing")]
     pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
+    online: bool 
+    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
 
 
 class FollowUser(WallRecipient):
@@ -363,16 +436,16 @@ class Clan(ITDBaseModel):
 
 
 class PinWithDate(Pin):
-    granted_at: Annotated[datetime, Field(alias="grantedAt")]
+    granted_at: Annotated[ITDDatetime, Field(alias="grantedAt")]
 
 
 class Notification(ITDBaseModel):
     id: UUID
-    created_at: Annotated[datetime, Field(alias="createdAt")]
+    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
     preview: str | None
     read: bool
     actor: WallRecipient
-    read_at: Annotated[datetime | None, Field(alias="readAt")]
+    read_at: Annotated[ITDDatetime | None, Field(alias="readAt")]
     target_id: Annotated[UUID | None, Field(alias="targetId")]
     target_type: Annotated[Literal['post'] | None, Field(alias="targetType")]
     type: Literal[
@@ -389,7 +462,7 @@ class File(ITDBaseModel):
 
 
 class GetFile(File):
-    created_at: Annotated[datetime, Field(alias="createdAt")]
+    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
 
 
 class Privacy(ITDBaseModel):
@@ -414,7 +487,7 @@ class BlockedUser(Author):
 
 
 class BlockedAuthor(VerifiedUser):
-    blocked_at: Annotated[datetime, Field(alias="blockedAt")]
+    blocked_at: Annotated[ITDDatetime, Field(alias="blockedAt")]
 
 
 class UserBlockMe(Author):

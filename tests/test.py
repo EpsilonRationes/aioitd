@@ -1,11 +1,18 @@
+import sys
+import os
+
+# Добавляем путь к корневой директории
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
+
 import asyncio
 from uuid import uuid8
 
-from aioitd import AsyncITDClient, ValidationError, TooLargeError, UploadError, NotFoundError, FetchInterval
+from aioitd import AsyncITDClient, ValidationError, TooLargeError, UploadError, NotFoundError, FetchInterval, BoldSpan, SpoilerSpan, MentionSpan, HashTagSpan
 
 from setting import refresh_token as refresh_token1, refresh_token2
-
-
+refresh_token1 = "c3ccf0795b76492ea1d1cd3e0703ba1b4ddbc9a7c5f9c0df1cebf8bac3448c29"
 random_id = uuid8()
 image_id = "c63a2cf7-3c6d-46d4-bfde-634067603e73" # чужое изображение
 not_many_hashtag = "femboy" # не очень популярный хештег
@@ -63,7 +70,7 @@ async def test_file():
 
 
 async def test_hashtags():
-    itd1 = AsyncITDClient(refresh_token1)
+    itd1 = AsyncITDClient(refresh_token1, time_delta=1, timeout=20)
 
     hashtags = await itd1.get_trending_hashtags()
     hashtags = await itd1.get_trending_hashtags(20)
@@ -89,7 +96,7 @@ async def test_hashtags():
 
     cursor = None
     while True:
-        hashtag, pagination, hashtags = await itd1.get_posts_by_hashtag(not_many_hashtag, cursor=cursor)
+        hashtag, pagination, hashtags = await itd1.get_posts_by_hashtag(not_many_hashtag, cursor=cursor, limit=1)
         cursor = pagination.next_cursor
         if cursor is None:
             break
@@ -126,7 +133,7 @@ post_with_comments = "50f9d2de-655e-49cf-8939-9f330eeaad06"
 post_with_all_type_comments = "d96edabe-8486-446e-9709-6f0dfad3a333"
 
 async def test_posts():
-    interval = FetchInterval(0.11)
+    interval = FetchInterval(0.2)
     itd1 = AsyncITDClient(refresh_token1, time_delta=interval)
     itd2 = AsyncITDClient(refresh_token2, time_delta=interval)
     cursor = None
@@ -357,5 +364,57 @@ async def test_posts():
     await itd1.delete_comment(image_comment.id)
 
 
+async def test_poll():
+    itd1 = AsyncITDClient(refresh_token1)
+
+    post = await itd1.create_post("", question="Test question", options=["option1", "option2"])
+ 
+    try: 
+        post = await itd1.create_post("", question="1"*129, options=["option1", "option2"])
+    except ValidationError:
+        pass
+    
+    try:
+        post = await itd1.create_post("", question="for_test", options=["option1"]*1)
+    except ValidationError:
+        pass 
+
+    try:
+        post = await itd1.create_post("", question="for_test", options=[""]*2)
+    except ValidationError:
+        pass
+
+    await itd1.close()
+
+
+async def test_spans():
+    itd1 = AsyncITDClient(refresh_token1)
+    
+    post = await itd1.create_post(
+        "Крутите барабан! мелочёвка", 
+        spans=[SpoilerSpan(offset=len("Крутите барабан! ")+i, length=1) for i in range(9)] + [SpoilerSpan(offset=len("Крутите барабан! "), length=9)]
+    )
+    await itd1.delete_post(post.id)
+
+    try:
+        post = await itd1.create_post(
+            "Сколько споллеров можно повесить на одну букву? Ъ", 
+            spans=[SpoilerSpan(offset=len("Сколько споллеров можно повесить на одну букву? "), length=1) for i in range(101)]
+        )
+    except ValidationError:
+        pass
+
+    
+    await itd1.close()
+
+
+async def test_users():
+    itd1 = AsyncITDClient(refresh_token1)
+
+    user = await itd1.get_user("nowkie")
+    me = await itd1.get_me()
+    
+    await itd1.close()
+
 if __name__ == '__main__':
-    asyncio.run(test_posts())
+    asyncio.run(test_users())
