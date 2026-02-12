@@ -266,7 +266,7 @@ class FullPost(UserPost):
 class Pagination(ITDBaseModel):
     limit: int
     has_more: Annotated[bool, Field(alias="hasMore")]
-    next_cursor: Annotated[str, Field(alias="nextCursor")]
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")]
 
 
 class IntPagination(Pagination):

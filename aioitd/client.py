@@ -172,7 +172,7 @@ class AsyncITDClient:
             headers={"authorization": add_bearer(self.access_token)},
             **kwargs
         )
-
+        print(result.text)
         if result.text == "UNAUTHORIZED":
             raise UnauthorizedError
         if result.text == "NOT_FOUND":
@@ -453,7 +453,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
-            NotFoundError: пост не существует или удалён
+            NotFoundError: пост не существует, удалён, владелец поста забанил
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
@@ -605,7 +605,37 @@ class AsyncITDClient:
         return models.PostWithoutAuthorId(**data)
 
     async def get_posts_by_user(
-            self, username: str, cursor: datetime | None = None, limit: int = 20, sort: Literal["new"] = "new"
+            self, username: str, cursor: str | None = None, limit: int = 20, sort: Literal["new", "popular"] = "new"
+    ) -> tuple[models.Pagination, list[models.UserPost]]:
+        """Посты на стене пользователя.
+
+                Args:
+                    username: имя пользователя
+                    cursor: next_cursor на предыдущей странице
+                    limit: максимальное количество выданных постов
+                    sort: сортировка
+
+                Raises:
+                    UnauthorizedError: неверный access токен
+                    NotFoundError: пользователь не найден
+                    ValidationError: 1 <= limit <= 50
+                """
+        validate_limit(limit)
+        if len(username) == 0:
+            raise NotFoundError(NotFoundError.code, 'User not found')
+        result = await self.get(
+            f"api/posts/user/{username}",
+            params={"sort": sort, "limit": limit} | (
+                {} if cursor is None else {"cursor": cursor})
+        )
+        data = result.json()["data"]
+        pagination = models.Pagination(**data["pagination"])
+        posts = list(map(lambda post: models.UserPost(**post), data["posts"]))
+
+        return pagination, posts
+
+    async def get_posts_by_user_newest(
+            self, username: str, cursor: datetime | None = None, limit: int = 20
     ) -> tuple[models.TimePagination, list[models.UserPost]]:
         """Посты на стене пользователя. Отсортированы по дате публикации
 
@@ -613,7 +643,6 @@ class AsyncITDClient:
             username: имя пользователя
             cursor: время публикации последнего поста на предыдущей странице
             limit: максимальное количество выданных постов
-            sort: сортировка
 
         Raises:
             UnauthorizedError: неверный access токен
@@ -621,9 +650,11 @@ class AsyncITDClient:
             ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
+        if len(username) == 0:
+            raise NotFoundError(NotFoundError.code, 'User not found')
         result = await self.get(
             f"api/posts/user/{username}",
-            params={"sort": sort, "limit": limit} | (
+            params={"sort": "new", "limit": limit} | (
                 {} if cursor is None else {"cursor": datetime_to_itd_format(cursor)})
         )
         data = result.json()["data"]
@@ -633,7 +664,7 @@ class AsyncITDClient:
         return pagination, posts
 
     async def get_posts_by_user_popular(
-            self, username: str, cursor: int | None = None, limit: int = 20, sort: Literal["popular"] = "popular"
+            self, username: str, cursor: int | None = None, limit: int = 20
     ) -> tuple[models.IntPagination, list[models.UserPost]]:
         """Посты на стене пользователя. Отсортированы по популярности.
 
@@ -641,7 +672,6 @@ class AsyncITDClient:
             username: имя пользователя
             cursor: номер последнего поста на предыдущей странице
             limit: максимальное количество выданных постов
-            sort: сортировка
 
         Raises:
             UnauthorizedError: неверный access токен
@@ -649,9 +679,11 @@ class AsyncITDClient:
             ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
+        if len(username) == 0:
+            raise NotFoundError(NotFoundError.code, 'User not found')
         result = await self.get(
             f"api/posts/user/{username}",
-            params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": str(cursor)})
+            params={"sort": "popular", "limit": limit} | ({} if cursor is None else {"cursor": str(cursor)})
         )
         data = result.json()["data"]
         pagination = models.IntPagination(**data["pagination"])
@@ -675,6 +707,8 @@ class AsyncITDClient:
             ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
+        if len(username) == 0:
+            raise NotFoundError(NotFoundError.code, 'User not found')
         result = await self.get(
             f"api/posts/user/{username}/liked",
             params={"sort": "new", "limit": limit} | (
@@ -702,6 +736,8 @@ class AsyncITDClient:
             ValidationError: 1 <= limit <= 50
         """
         validate_limit(limit)
+        if len(username) == 0:
+            raise NotFoundError(NotFoundError.code, 'User not found')
         result = await self.get(
             f"api/posts/user/{username}/wall",
             params={"sort": "new", "limit": limit} | (
