@@ -42,6 +42,8 @@ class ServerError(ITDError):
     code = "SERVER_ERROR"
     message = "Сервер временно недоступен"
 
+class GatewayTimeOutError(ITDError):
+    code = "GET_WAY"
 
 class UnknowError(ITDError):
     code = "UNKNOWN_ERROR"
