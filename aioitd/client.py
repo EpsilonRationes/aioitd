@@ -202,7 +202,8 @@ class AsyncITDClient:
                 else:
                     raise ITDError(code=error['code'], message=error["message"])
         except JSONDecodeError:
-            pass
+            if result.status_code != 204:
+                raise ITDError("UNKNOWN", result.text)
 
         return result
 
