@@ -12,7 +12,7 @@ import asyncio
 from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, ValidationError, ITDError, \
     itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError, Error429
 
-from aioitd import models
+from aioitd import models, GatewayTimeOutError
 import httpx
 
 from aioitd.models import datetime_to_itd_format
@@ -172,7 +172,7 @@ class AsyncITDClient:
             headers={"authorization": add_bearer(self.access_token)},
             **kwargs
         )
-        print(result.text)
+
         if result.text == "UNAUTHORIZED":
             raise UnauthorizedError
         if result.text == "NOT_FOUND":
@@ -181,6 +181,8 @@ class AsyncITDClient:
             raise TooLargeError(TooLargeError.code, "Размер запроса слишком большой")
         if result.status_code == 405:
             raise NotAllowedError(NotAllowedError.code, "Not Allowed")
+        if result.status_code == 504:
+            raise GatewayTimeOutError(GatewayTimeOutError.code, "504 Gateway Time-out")
 
         try:
             data = result.json()
@@ -760,7 +762,7 @@ class AsyncITDClient:
 
         Args:
             post_id: UUID поста
-            cursor: номер последнего комментария на предыдущей странице
+            cursor: next_cursor с предыдущей страницы
             sort: сортировать по
             limit: максимальное количество комментариев на странице
 
@@ -823,7 +825,7 @@ class AsyncITDClient:
 
         Args:
             post_id: UUID поста
-            cursor: номер последнего комментария на предыдущей странице
+            cursor: UUID последнего комментария на предыдущей странице
             limit: максимальное количество комментариев на странице
 
         Raises:
@@ -856,7 +858,7 @@ class AsyncITDClient:
 
         Args:
             post_id: UUID поста
-            cursor: номер последнего комментария на предыдущей странице
+            cursor: UUID последнего комментария на предыдущей странице
             limit: максимальное количество комментариев на странице
 
         Raises:
