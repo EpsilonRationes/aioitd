@@ -10,9 +10,10 @@ import mimetypes
 import asyncio
 
 from aioitd.exceptions import UnauthorizedError, NotFoundError, InvalidPasswordError, ValidationError, ITDError, \
-    itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError, Error429
+    itd_codes, TooLargeError, NotAllowedError, RateLimitError, TokenMissingError, ParamsValidationError, Error429, \
+    GatewayTimeOutError
 
-from aioitd import models, GatewayTimeOutError
+from aioitd import models
 import httpx
 
 from aioitd.models import datetime_to_itd_format
