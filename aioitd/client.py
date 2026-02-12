@@ -934,13 +934,13 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
             NotFoundError: Пост не найден
-            ValidationError: len(content) <= 5_000
+            ValidationError: 1 <= len(content) <= 5_000
             ForbiddenError: Нет прав для редактирования этого поста
         """
         if isinstance(post_id, str):
             post_id = UUID(post_id)
-        if len(content) > 5_000:
-            raise ValidationError(ValidationError.code, "Максимальная длина content 5_000")
+        if len(content) > 5_000 or len(content) == 0:
+            raise ValidationError(ValidationError.code, "Максимальная длина content 5_000, минимальная 0")
 
         result = await self.put(f"api/posts/{post_id}", {"content": content})
         data = result.json()
