@@ -120,4 +120,16 @@ while True:
         await asyncio.sleep(ex.retry_after)
 ```
 
+# Уведомления по SSE 
+
+```python
+async def main():
+    async with AsyncITDClient(refresh_token) as itd:
+        async with itd.connect_sse() as events:
+            async for event in events:
+                print(event)
+
+asyncio.run(main())
+```
+
 Автор в итд [aioitd](https://итд.com/aioitd), тг [@rationessEps](https://t.me/rationessEps)

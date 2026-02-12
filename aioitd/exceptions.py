@@ -1,3 +1,6 @@
+from httpx_sse import SSEError
+
+
 class ITDError(Exception):
     messages = {
         'Session not found': 'Такого refresh токена не существует.',
@@ -42,8 +45,10 @@ class ServerError(ITDError):
     code = "SERVER_ERROR"
     message = "Сервер временно недоступен"
 
+
 class GatewayTimeOutError(ITDError):
     code = "GET_WAY"
+
 
 class UnknowError(ITDError):
     code = "UNKNOWN_ERROR"
@@ -90,6 +95,7 @@ class InvalidOldPasswordError(ITDError):
 
 class UploadError(ITDError):
     code = "UPLOAD_ERROR"
+
 
 class ParamsValidationError(ITDError):
     def __init__(self, type: str, on: str, found: dict[str, str]):

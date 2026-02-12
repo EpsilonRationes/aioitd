@@ -428,3 +428,18 @@ class UserBlockMe(Author):
     pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
     banner: str | None
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
+
+
+class SSEEvent(ITDBaseModel):
+    event: str
+    data: dict | None
+
+
+class ConnectedEvent(ITDBaseModel):
+    user_id: Annotated[UUID, Field(alias="userId")]
+    timestamp: int
+
+
+class NotificationEvent(Notification):
+    user_id: Annotated[UUID, Field(alias="userId")]
+    sound: bool
