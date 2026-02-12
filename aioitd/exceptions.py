@@ -25,8 +25,9 @@ class ITDError(Exception):
         'Not allowed to edit this post': "Нет прав для редактирования этого поста",
         'Comment not found': 'Комментарий не найден',
         'Not allowed to delete this comment': 'нет прав на удаление комментария',
-        'Rate limit exceeded': 'Слишком много запросов'
-    }
+        'Rate limit exceeded': 'Слишком много запросов',
+        'Content, attachments or poll required': "Нельзя создать пустой пост"
+     }
 
     def __init__(self, code: str, message: str):
         self.message = message

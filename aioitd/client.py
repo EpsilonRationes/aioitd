@@ -177,7 +177,7 @@ class AsyncITDClient:
             headers={"authorization": add_bearer(self.access_token)},
             **kwargs
         )
-
+        #print(result.text)
         if result.text == "UNAUTHORIZED":
             raise UnauthorizedError
         if result.text == "NOT_FOUND":
@@ -701,7 +701,7 @@ class AsyncITDClient:
 
     async def get_posts_by_user_liked(
             self, username: str, cursor: datetime | None = None, limit: int = 20
-    ) -> tuple[models.TimePagination, list[models.Post]]:
+    ) -> tuple[models.TimePagination, list[models.LikedPost]]:
         """Посты на которые пользователей поставил лайк.
 
         Args:
@@ -724,7 +724,7 @@ class AsyncITDClient:
         )
         data = result.json()["data"]
         pagination = models.TimePagination(**data["pagination"])
-        posts = list(map(lambda post: models.Post(**post), data["posts"]))
+        posts = list(map(lambda post: models.LikedPost(**post), data["posts"]))
 
         return pagination, posts
 
@@ -891,7 +891,11 @@ class AsyncITDClient:
             self,
             content: str,
             attachment_ids: list[UUID | str] | None = None,
-            wall_recipient_id: UUID | str = None
+            wall_recipient_id: UUID | str = None,
+            multiple_choice: bool = False,
+            question: str | None = None,
+            options: list[str] | None = None,
+            spans: list[models.Span] = None 
     ) -> models.UserPostWithoutAuthorId:
         """Создать пост.
 
@@ -899,11 +903,20 @@ class AsyncITDClient:
             content: Текст поста
             attachment_ids: Прикреплённые файлы
             wall_recipient_id: id пользователя
+            multiple_choice: возможен ли множественный выбор в опросе
+            question: заголовок опроса
+            options: варианты ответов
+            spans
+
         Raises:
             UnauthorizedError: неверный access токен
             ValidationError: len(content) <= 5_000
             ValidationError: len(attachments_ids) <= 10
-            ValidationError: Нельзя создать пост content="", attachment_ids = []
+            ValidationError: Нельзя создать пост content="", attachment_ids = [], question = None
+            ValidationError: 1 <= len(question) <= 128
+            ValidationError: 2 <= len(options) <= 10
+            ValidationError: 1 <= len(options[i]) <= 32
+            ValidationError: len(spans) <= 100
             NotFoundError: пользователь не найден
         """
         if len(content) > 5_000:
@@ -914,15 +927,36 @@ class AsyncITDClient:
             raise ValidationError(ValidationError.code, 'Maximum 10 attachments allowed per post')
         else:
             attachment_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, attachment_ids))
-        if len(attachment_ids) == 0 and len(content) == 0:
-            raise ValidationError(ValidationError.code, 'Content or attachments required')
-        result = await self.post(
-            "api/posts",
-            {
-                "content": content,
-                "attachmentIds": list(map(str, attachment_ids))} |
-            ({} if wall_recipient_id is None else {"wallRecipientId": str(wall_recipient_id)})
-        )
+        if len(attachment_ids) == 0 and len(content) == 0 and question is None:
+            raise ValidationError(ValidationError.code, 'Content, attachments or poll required')
+        json = {
+            "content": content,
+            "attachmentIds": list(map(str, attachment_ids))
+        }
+        if wall_recipient_id is not None:
+            json["wallRecipientId"] = str(wall_recipient_id)
+        
+        if question is not None:
+            if len(question) == 0 or len(question) > 128:
+                raise ValidationError(ValidationError.code, "Минимальная длина question 1, максимальная 128")
+            if options is None or len(options) < 2 or len(options) > 10:
+                raise ValidationError(ValidationError.code, "Минимальная длина options 2, максимальная 10")
+            poll = {}
+            poll["question"] = question
+            poll["multipleChoice"] = multiple_choice
+            poll["options"] = []
+            for option in options:
+                if len(option) > 32:
+                    raise ValidationError("Минимальная длина len(options[i]) 1, максимальная 32")
+                poll["options"].append({"text": option})
+            json['poll'] = poll
+        
+        if spans is not None: 
+            if len(spans) > 100:
+                raise ValidationError(ValidationError.code, "Максимальная длина spans 100")
+            json['spans'] = [span.model_dump() for span in spans]
+
+        result = await self.post("api/posts", json)
         data = result.json()
 
         return models.UserPostWithoutAuthorId(**data)
@@ -1434,7 +1468,8 @@ class AsyncITDClient:
             self,
             is_private: bool | None = None,
             likes_visibility: Literal["everyone", "followers", "mutual", "nobody"] | None = None,
-            wall_access: Literal["everyone", "followers", "mutual", "nobody"] | None = None
+            wall_access: Literal["everyone", "followers", "mutual", "nobody"] | None = None,
+            show_last_seen: bool | None = None
     ) -> models.Privacy:
         """Изменить настройки приватности текущего пользователя."""
         params = {}
@@ -1444,6 +1479,8 @@ class AsyncITDClient:
             params["likesVisibility"] = likes_visibility
         if wall_access is not None:
             params["wallAccess"] = wall_access
+        if show_last_seen is not None:
+            params["showLastSeen"] = show_last_seen
 
         result = await self.put(f"api/users/me/privacy", params)
         data = result.json()

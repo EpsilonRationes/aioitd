@@ -9,4 +9,5 @@ from aioitd.models import Annotated, AudioCommentAttachment, Author, AuthorWitho
     Pin, PinWithDate, PopularPost, Post, PostWithoutAuthorId, Privacy, Profile, Reply, ReplyComment, Report, Span, \
     TimePagination, UUIDCommentPagination, UUIDPagination, UpdatePostResponse, User, UserBlockMe, UserPost, \
     UserPostWithoutAuthorId, UserWithRole, VerifiedUser, VideoCommentAttachment, WallRecipient, HashtagPost, \
-    HashTagSpan, NotificationEvent, ConnectedEvent, SSEEvent, MentionSpan, BaseSpan
+    HashTagSpan, NotificationEvent, ConnectedEvent, SSEEvent, MentionSpan, BaseSpan, BoldSpan, SpoilerSpan, StrikeSpan, \
+    ItalicSpan, MonospaceSpan, UnderlineSpan, Poll, LikedPost, LinkSpan
