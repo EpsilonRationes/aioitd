@@ -100,7 +100,7 @@ class AudioCommentAttachment(ITDBaseModel):
 
 
 class ImageCommentAttachment(ITDBaseModel):
-    duration: None
+    duration: None = None
     filename: str
     id: UUID
     mimeType: str
@@ -114,7 +114,7 @@ class ImageCommentAttachment(ITDBaseModel):
 
 
 class VideoCommentAttachment(ITDBaseModel):
-    duration: None
+    duration: None = None
     filename: str
     id: UUID
     mimeType: str
