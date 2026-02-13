@@ -469,6 +469,7 @@ class Privacy(ITDBaseModel):
     is_private: Annotated[bool, Field(alias="isPrivate")]
     likes_visibility: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='likesVisibility')]
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='wallAccess')]
+    show_last_seen: Annotated[bool, Field(alias="showLastSeen")]
 
 
 class UserWithRole(VerifiedUser):

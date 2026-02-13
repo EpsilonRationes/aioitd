@@ -1,18 +1,10 @@
-import sys
-import os
-
-# Добавляем путь к корневой директории
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-
-
 import asyncio
 from uuid import uuid8
 
 from aioitd import AsyncITDClient, ValidationError, TooLargeError, UploadError, NotFoundError, FetchInterval, BoldSpan, SpoilerSpan, MentionSpan, HashTagSpan
 
 from setting import refresh_token as refresh_token1, refresh_token2
-refresh_token1 = "c3ccf0795b76492ea1d1cd3e0703ba1b4ddbc9a7c5f9c0df1cebf8bac3448c29"
+
 random_id = uuid8()
 image_id = "c63a2cf7-3c6d-46d4-bfde-634067603e73" # чужое изображение
 not_many_hashtag = "femboy" # не очень популярный хештег
@@ -398,7 +390,7 @@ async def test_spans():
 
     try:
         post = await itd1.create_post(
-            "Сколько споллеров можно повесить на одну букву? Ъ", 
+            "Сколько споллеров можно повесить на одну букву? Ъ",
             spans=[SpoilerSpan(offset=len("Сколько споллеров можно повесить на одну букву? "), length=1) for i in range(101)]
         )
     except ValidationError:
@@ -416,5 +408,15 @@ async def test_users():
     
     await itd1.close()
 
+
+async def test_privacy():
+    itd1 = AsyncITDClient(refresh_token1)
+
+    privacy = await itd1.get_privacy()
+
+    privacy = await itd1.update_privacy(is_private=True)
+    privacy = await itd1.update_privacy(is_private=False)
+
+
 if __name__ == '__main__':
-    asyncio.run(test_users())
+    asyncio.run(test_privacy())
