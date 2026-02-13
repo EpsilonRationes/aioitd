@@ -418,5 +418,37 @@ async def test_privacy():
     privacy = await itd1.update_privacy(is_private=False)
 
 
+post_with_vote = "758f912e-65fa-4db2-9e68-ce33c70460d7"
+
+async def test_vote():
+    itd1 = AsyncITDClient(refresh_token1)
+
+    post = await itd1.get_post(post_with_vote)
+
+    poll = await itd1.vote(post.id, [post.poll.options[0].id])
+    poll = await itd1.vote(post.id, [post.poll.options[0].id])
+
+    try:
+        poll = await itd1.vote(random_id, [post.poll.options[0].id])
+    except NotFoundError:
+        pass
+
+    try:
+        poll = await itd1.vote(post.id, [random_id])
+    except ValidationError:
+        pass
+
+    try:
+        poll = await itd1.vote(post.id, [post.poll.options[0].id, post.poll.options[1].id])
+    except ValidationError:
+        pass
+    try:
+        poll = await itd1.vote(post.id, [])
+    except ValidationError:
+        pass
+
+    await itd1.close()
+
+
 if __name__ == '__main__':
-    asyncio.run(test_privacy())
+    asyncio.run(test_vote())

@@ -1543,3 +1543,27 @@ class AsyncITDClient:
                 yield self._sse_wrapper(event_source.aiter_sse)
             finally:
                 pass
+
+
+    async def vote(self, post_id: UUID | str, options_ids: list[UUID | str]) -> models.Poll:
+        """Проголосовать в опросе.
+
+        Vars:
+            post_id: UUID поста
+            options_ids: список UUID выбранных вариантов
+
+        Raises:
+            NotFoundError: пост не найден
+            ValidationError: Один или несколько вариантов не принадлежат этому опросу
+            ValidationError: В этом опросе можно выбрать только один вариант
+            ValidationError: len(option_ids) > 0
+        """
+        if isinstance(post_id, str):
+            post_id = UUID(post_id)
+        if len(options_ids) == 0:
+            raise ValidationError(ValidationError.code, "Должен быть хотя бы один варинат ответа")
+        options_ids = list(map(lambda id: UUID(id) if isinstance(id, str) else id, options_ids))
+
+        result = await self.post(f"api/posts/{post_id}/poll/vote", {"optionIds": list(map(str, options_ids))})
+        data = result.json()["data"]
+        return models.Poll(**data)
