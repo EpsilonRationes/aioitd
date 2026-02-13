@@ -58,7 +58,7 @@ class VerifiedUser(WallRecipient):
 class Author(VerifiedUser):
     pin: Pin | None
 
-class AuthorWihtOnline(Author):
+class AuthorWithOnline(Author):
     online: bool 
 
 class AuthorWithoutId(ITDBaseModel):
@@ -253,7 +253,7 @@ class HashtagPost(BasePost, Counts):
 class Post(BasePost, Counts):
     is_liked: Annotated[bool, Field(alias="isLiked")]
     is_viewed: Annotated[bool, Field(alias="isViewed")]
-    author: AuthorWihtOnline
+    author: AuthorWithOnline
     poll: Poll | None
 
     wall_recipient_id: Annotated[None | UUID, Field(alias="wallRecipientId")]
@@ -279,7 +279,7 @@ class PostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
 
 
 class PopularPost(Post):
-    author: AuthorWihtOnline
+    author: AuthorWithOnline
     poll: Poll | None
     author_id: Annotated[UUID, Field(alias="authorId")]
 
@@ -300,7 +300,7 @@ class Poll(ITDBaseModel):
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
     has_voted: Annotated[bool, Field(alias="hasVoted")]
     id: UUID
-    multiple_hoice: Annotated[bool, Field(alias="multipleChoice")]
+    multiple_choice: Annotated[bool, Field(alias="multipleChoice")]
     post_id: Annotated[UUID, Field(alias="postId")]
     question: str 
     total_votes: Annotated[int, Field(alias="totalVotes")]
@@ -469,6 +469,7 @@ class Privacy(ITDBaseModel):
     is_private: Annotated[bool, Field(alias="isPrivate")]
     likes_visibility: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='likesVisibility')]
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias='wallAccess')]
+    show_last_seen: Annotated[bool, Field(alias="showLastSeen")]
 
 
 class UserWithRole(VerifiedUser):
