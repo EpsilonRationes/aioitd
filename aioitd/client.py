@@ -1255,7 +1255,9 @@ class AsyncITDClient:
         data = result.json()
         return models.Me(**data)
 
-    async def get_user(self, username: str) -> models.FullUser | models.BlockedUser | models.UserBlockMe:
+    async def get_user(
+            self, username: str
+    ) -> models.FullUser | models.BlockedUser | models.UserBlockMe | models.PrivateUser:
         """Получить данные пользователя.
 
         Args:
@@ -1271,6 +1273,8 @@ class AsyncITDClient:
             return models.BlockedUser(**data)
         elif 'isBlockedByThem' in data:
             return models.UserBlockMe(**data)
+        elif 'isPrivate' in data:
+            return models.PrivateUser(**data)
         else:
             return models.FullUser(**data)
 

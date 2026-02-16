@@ -430,6 +430,21 @@ class FullMe(BaseFullUser):
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
 
 
+class PrivateUser(Author):
+    is_private: Annotated[Literal[True], Field(alias="isPrivate")]
+    banner: str | None
+    posts_count: Annotated[int, Field(alias="postsCount")]
+    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
+    following_count: Annotated[int, Field(alias="followingCount")]
+    followers_count: Annotated[int, Field(alias="followersCount")]
+    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
+    is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
+    is_following: Annotated[bool, Field(alias="isFollowing")]
+    pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
+    online: bool
+    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
+
+
 class FullUser(BaseFullUser):
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
     is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
@@ -437,6 +452,7 @@ class FullUser(BaseFullUser):
     pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
     online: bool
     last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
+
 
 
 class FollowUser(WallRecipient):
@@ -525,6 +541,8 @@ class UserBlockMe(Author):
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
     online: bool
     last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
+
+
 
 
 class SSEEvent(ITDBaseModel):
