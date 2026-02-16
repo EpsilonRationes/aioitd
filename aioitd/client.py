@@ -79,7 +79,7 @@ class FetchInterval:
     def __init__(self, time_delta: float | int = 0.105):
         self.time_delta = time_delta
         self.last_fetch = 0
-
+        self.start = time.time()
     async def __call__(self):
         await self.interval()
 
@@ -89,7 +89,8 @@ class FetchInterval:
         if t - last_fetch < self.time_delta:
             self.last_fetch = last_fetch + self.time_delta
             await asyncio.sleep(self.time_delta - t + last_fetch)
-        self.last_fetch = time.time()
+        if time.time()  > self.last_fetch:
+            self.last_fetch = time.time()
 
 
 class AsyncITDClient:
