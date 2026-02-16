@@ -1259,6 +1259,10 @@ class AsyncITDClient:
 
         Args:
             username: имя пользователя
+
+        Raises:
+            NotFoundError: пользователь не найден
+            UserBlockedError: пользователь заблокирован
         """
         result = await self.get(f"api/users/{username}")
         data = result.json()

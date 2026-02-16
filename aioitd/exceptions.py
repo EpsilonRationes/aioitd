@@ -136,6 +136,10 @@ class ConflictError(ITDError):
     code = "CONFLICT"
 
 
+class UserBlockedError(ITDError):
+    code = "USER_BLOCKED"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -153,7 +157,8 @@ itd_exceptions = [
     RateLimitError,
     UnknowError,
     ServerError,
-    UploadError
+    UploadError,
+    UserBlockedError
 ]
 
 itd_codes = {}
