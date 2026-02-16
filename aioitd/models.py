@@ -58,8 +58,10 @@ class VerifiedUser(WallRecipient):
 class Author(VerifiedUser):
     pin: Pin | None
 
+
 class AuthorWithOnline(Author):
-    online: bool 
+    online: bool
+
 
 class AuthorWithoutId(ITDBaseModel):
     avatar: str
@@ -87,8 +89,7 @@ class InvalidPostAttachment(ITDBaseModel):
     height: None
 
 
-class AudioCommentAttachment(ITDBaseModel):
-    duration: int
+class CreateAudioCommentAttachment(ITDBaseModel):
     filename: str
     id: UUID
     mimeType: str
@@ -101,8 +102,11 @@ class AudioCommentAttachment(ITDBaseModel):
     height: None
 
 
-class ImageCommentAttachment(ITDBaseModel):
-    duration: None = None
+class AudioCommentAttachment(CreateAudioCommentAttachment):
+    duration: int
+
+
+class CreateImageCommentAttachment(ITDBaseModel):
     filename: str
     id: UUID
     mimeType: str
@@ -115,8 +119,11 @@ class ImageCommentAttachment(ITDBaseModel):
     height: int
 
 
-class VideoCommentAttachment(ITDBaseModel):
-    duration: None = None
+class ImageCommentAttachment(CreateImageCommentAttachment):
+    duration: None
+
+
+class CreateVideoCommentAttachment(ITDBaseModel):
     filename: str
     id: UUID
     mimeType: str
@@ -127,6 +134,10 @@ class VideoCommentAttachment(ITDBaseModel):
     url: str
     width: None
     height: None
+
+
+class VideoCommentAttachment(CreateVideoCommentAttachment):
+    duration: None
 
 
 class BasePost(ITDBaseModel):
@@ -162,7 +173,7 @@ class HashTagSpan(BaseSpan):
     type: Literal['hashtag'] = 'hashtag'
 
 
-class MonospaceSpan(BaseSpan): 
+class MonospaceSpan(BaseSpan):
     type: Literal["monospace"] = "monospace"
 
 
@@ -187,12 +198,12 @@ class SpoilerSpan(BaseSpan):
 
 
 class LinkSpan(BaseSpan):
-    type: Literal["link"] = "link" 
+    type: Literal["link"] = "link"
     url: str
 
 
 type Span = Annotated[
-    MentionSpan | HashTagSpan | MonospaceSpan | StrikeSpan | UnderlineSpan | BoldSpan | ItalicSpan | SpoilerSpan | LinkSpan, 
+    MentionSpan | HashTagSpan | MonospaceSpan | StrikeSpan | UnderlineSpan | BoldSpan | ItalicSpan | SpoilerSpan | LinkSpan,
     Field(discriminator='type')
 ]
 
@@ -224,7 +235,17 @@ class Comment(BaseComment):
     replies: list[Reply]
 
 
-class ReplyComment(BasePost):
+class CreateBaseComment(BaseComment):
+    attachments: list[
+        Annotated[
+            CreateImageCommentAttachment | CreateAudioCommentAttachment | CreateVideoCommentAttachment,
+            Field(discriminator="type")
+        ]
+    ]
+
+
+class ReplyComment(CreateBaseComment):
+    replies_count: Annotated[int, Field(alias="repliesCount")] = 0
     is_liked: Annotated[bool, Field(alias="isLiked")]
     reply_to: Annotated[None, Field(alias="replyTo")]
 
@@ -267,6 +288,7 @@ class Post(BasePost, Counts):
 class LikedPost(Post):
     author: Author
 
+
 class PostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
     is_liked: Annotated[bool, Field(alias="isLiked")]
 
@@ -290,9 +312,9 @@ class UserPost(Post):
 
 
 class Option(ITDBaseModel):
-    id: UUID 
-    position: int 
-    text: str 
+    id: UUID
+    position: int
+    text: str
     votest_count: Annotated[int, Field(alias="votesCount")]
 
 
@@ -302,7 +324,7 @@ class Poll(ITDBaseModel):
     id: UUID
     multiple_choice: Annotated[bool, Field(alias="multipleChoice")]
     post_id: Annotated[UUID, Field(alias="postId")]
-    question: str 
+    question: str
     total_votes: Annotated[int, Field(alias="totalVotes")]
     voted_option_ids: Annotated[list[UUID], Field(alias="votedOptionIds")]
     options: list[Option]
@@ -323,7 +345,7 @@ class UserPostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
 
 
 class LastSeen(ITDBaseModel):
-    unit: str 
+    unit: str
     value: int
 
 
@@ -401,7 +423,6 @@ class BaseFullUser(Author):
     following_count: Annotated[int, Field(alias="followingCount")]
     followers_count: Annotated[int, Field(alias="followersCount")]
     likes_visibility: Annotated[str, Field(alias="likesVisibility")]
-    
 
 
 class FullMe(BaseFullUser):
@@ -414,7 +435,7 @@ class FullUser(BaseFullUser):
     is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
     is_following: Annotated[bool, Field(alias="isFollowing")]
     pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
-    online: bool 
+    online: bool
     last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
 
 
