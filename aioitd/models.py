@@ -346,7 +346,7 @@ class UserPostWithoutAuthorId(BasePostWithoutAuthorId, Counts):
 
 class LastSeen(ITDBaseModel):
     unit: str
-    value: int
+    value: int | None = None
 
 
 class FullPost(UserPost):
