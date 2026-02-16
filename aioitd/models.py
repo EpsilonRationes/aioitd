@@ -515,7 +515,7 @@ class BlockedAuthor(VerifiedUser):
 class UserBlockMe(Author):
     is_blocked_by_them: Annotated[bool, Field(alias="isBlockedByThem")]
     is_private: Annotated[bool, Field(alias="isPrivate")]
-    s_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
+    is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
     is_following: Annotated[bool, Field(alias="isFollowing")]
     following_count: Annotated[int, Field(alias="followingCount")]
     followers_count: Annotated[int, Field(alias="followersCount")]
@@ -523,6 +523,8 @@ class UserBlockMe(Author):
     pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
     banner: str | None
     wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
+    online: bool
+    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
 
 
 class SSEEvent(ITDBaseModel):
