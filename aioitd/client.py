@@ -988,7 +988,7 @@ class AsyncITDClient:
 
     async def comment(
             self, post_id: UUID | str, content: str = "", attachment_ids: list[UUID | str] | None = None
-    ) -> models.BaseComment:
+    ) -> models.CreateBaseComment:
         """Создать комментарий.
 
         Args:
@@ -1018,7 +1018,7 @@ class AsyncITDClient:
             {"content": content, "attachmentIds": list(map(str, attachment_ids))}
         )
         data = result.json()
-        return models.BaseComment(**data)
+        return models.CreateBaseComment(**data)
 
     async def delete_comment(self, comment_id: UUID | str) -> None:
         """Удалить комментарий.
