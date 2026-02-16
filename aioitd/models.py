@@ -410,12 +410,12 @@ class Report(ITDBaseModel):
 
 
 class Me(BaseAuthor):
-    bio: str
+    bio: str | None
     update_at: Annotated[ITDDatetime, Field(alias="updatedAt")]
 
 
 class BaseFullUser(Author):
-    bio: str
+    bio: str | None
     banner: str | None
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
     posts_count: Annotated[int, Field(alias="postsCount")]
@@ -495,7 +495,7 @@ class Privacy(ITDBaseModel):
 
 class UserWithRole(VerifiedUser):
     roles: list[str | Literal["user"]]
-    bio: str
+    bio: str | None
 
 
 class Profile(ITDBaseModel):
