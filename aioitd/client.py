@@ -79,7 +79,7 @@ class FetchInterval:
     def __init__(self, time_delta: float | int = 0.105):
         self.time_delta = time_delta
         self.last_fetch = 0
-
+        self.start = time.time()
     async def __call__(self):
         await self.interval()
 
@@ -89,7 +89,8 @@ class FetchInterval:
         if t - last_fetch < self.time_delta:
             self.last_fetch = last_fetch + self.time_delta
             await asyncio.sleep(self.time_delta - t + last_fetch)
-        self.last_fetch = time.time()
+        if time.time()  > self.last_fetch:
+            self.last_fetch = time.time()
 
 
 class AsyncITDClient:
@@ -1254,11 +1255,17 @@ class AsyncITDClient:
         data = result.json()
         return models.Me(**data)
 
-    async def get_user(self, username: str) -> models.FullUser | models.BlockedUser | models.UserBlockMe:
+    async def get_user(
+            self, username: str
+    ) -> models.FullUser | models.BlockedUser | models.UserBlockMe | models.PrivateUser:
         """Получить данные пользователя.
 
         Args:
             username: имя пользователя
+
+        Raises:
+            NotFoundError: пользователь не найден
+            UserBlockedError: пользователь заблокирован
         """
         result = await self.get(f"api/users/{username}")
         data = result.json()
@@ -1266,6 +1273,8 @@ class AsyncITDClient:
             return models.BlockedUser(**data)
         elif 'isBlockedByThem' in data:
             return models.UserBlockMe(**data)
+        elif 'isPrivate' in data:
+            return models.PrivateUser(**data)
         else:
             return models.FullUser(**data)
 
