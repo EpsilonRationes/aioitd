@@ -26,8 +26,10 @@ class ITDError(Exception):
         'Comment not found': 'Комментарий не найден',
         'Not allowed to delete this comment': 'нет прав на удаление комментария',
         'Rate limit exceeded': 'Слишком много запросов',
-        'Content, attachments or poll required': "Нельзя создать пустой пост"
-     }
+        'Content, attachments or poll required': "Нельзя создать пустой пост",
+        'Already following this user': 'Уже подписаны на этого пользователя',
+        'Session expired': 'Токен истёк'
+    }
 
     def __init__(self, code: str, message: str):
         self.message = message
@@ -76,6 +78,10 @@ class TokenNotFoundError(ITDError):
 
 class TokenRevokedError(ITDError):
     code = "SESSION_REVOKED"
+
+
+class TokenExpiredError(ITDError):
+    code = "SESSION_EXPIRED"
 
 
 class TokenMissingError(ITDError):
@@ -158,7 +164,8 @@ itd_exceptions = [
     UnknowError,
     ServerError,
     UploadError,
-    UserBlockedError
+    UserBlockedError,
+    TokenExpiredError
 ]
 
 itd_codes = {}

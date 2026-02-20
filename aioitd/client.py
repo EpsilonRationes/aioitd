@@ -262,6 +262,7 @@ class AsyncITDClient:
             TokenNotFoundError: Такого токена не существует
             TokenRevokedError: Токен отозван
             TokenMissingError: Токен не указан (равен пустой строке)
+            TokenExpiredError: Токен истёк
         """
         if len(self.refresh_token) == 0:
             raise TokenMissingError(code=TokenMissingError.code, message="Refresh token not found")
@@ -1289,6 +1290,10 @@ class AsyncITDClient:
 
         Args:
             username: имя пользователя
+
+        Raises:
+            NotFoundError: Пользователь не найден
+            ConflictError: Вы уже подписана на этого пользователя
 
         Returns: Количество подписчиков пользователя
         """
