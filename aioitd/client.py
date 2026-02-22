@@ -100,8 +100,6 @@ class AsyncITDClient:
         domain: домен
         refresh_on_unauthorized: для каждого запроса в случае `UnauthorizedError` вызвать `refresh` и сделать
             запрос ещё раз
-        check_access_token_expired: проверять ли access токен. Если True перед каждым запросом токен будет проверен и
-            в случае истечения времени жизни, будет вызван `refresh`
         upload_file_timeout: ограничение времени для загрузки файлов
         timeout: ограничение по времени для запросов
         time_delta: минимальная задержка между запросами, чтобы не возникало Error426. Используйте FetchInterval чтобы
@@ -113,7 +111,6 @@ class AsyncITDClient:
             refresh_token: str,
             domain: str = "xn--d1ah4a.com",
             refresh_on_unauthorized: bool = True,
-            check_access_token_expired: bool = True,
             upload_file_timeout: int = 200,
             timeout: int = 10,
             time_delta: FetchInterval | float | int | None = 0.105
@@ -123,7 +120,7 @@ class AsyncITDClient:
         self.refresh_token = refresh_token
         self.domain = domain
         self.access_token = "." + base64.urlsafe_b64encode(b'{"exp": 0}').decode("utf-8")
-        self.check_access_token_expired = check_access_token_expired
+        self.refresh_lock = asyncio.Lock()
         self.refresh_on_unauthorized = refresh_on_unauthorized
         self.session = httpx.AsyncClient()
         self.upload_file_timeout = upload_file_timeout
@@ -148,19 +145,24 @@ class AsyncITDClient:
     async def close(self) -> None:
         await self.session.aclose()
 
-    async def _unauthorized_wrapper(self, method: Callable[..., Coroutine], url: str, **kwargs) -> httpx.Response:
-        if self.check_access_token_expired:
+    async def _refersh_with_lock(self):
+        async with self.refresh_lock:
             if is_token_expired(self.access_token):
                 await self.refresh()
 
-        if self.refresh_on_unauthorized:
-            try:
-                return await self._request(method, url, **kwargs)
-            except UnauthorizedError:
-                await self.refresh()
-                return await self._request(method, url, **kwargs)
-        else:
+    async def _unauthorized_wrapper(self, method: Callable[..., Coroutine], url: str, **kwargs) -> httpx.Response:
+        if not self.refresh_on_unauthorized:
             return await self._request(method, url, **kwargs)
+
+        if is_token_expired(self.access_token):
+            await self._refersh_with_lock()
+
+        try:
+            return await self._request(method, url, **kwargs)
+        except UnauthorizedError:
+            await self._refersh_with_lock()
+            return await self._request(method, url, **kwargs)
+
 
     async def _request(
             self,
@@ -262,6 +264,7 @@ class AsyncITDClient:
             TokenNotFoundError: Такого токена не существует
             TokenRevokedError: Токен отозван
             TokenMissingError: Токен не указан (равен пустой строке)
+            TokenExpiredError: Токен истёк
         """
         if len(self.refresh_token) == 0:
             raise TokenMissingError(code=TokenMissingError.code, message="Refresh token not found")
@@ -1289,6 +1292,10 @@ class AsyncITDClient:
 
         Args:
             username: имя пользователя
+
+        Raises:
+            NotFoundError: Пользователь не найден
+            ConflictError: Вы уже подписана на этого пользователя
 
         Returns: Количество подписчиков пользователя
         """
