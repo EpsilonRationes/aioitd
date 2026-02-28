@@ -132,4 +132,4 @@ async def main():
 asyncio.run(main())
 ```
 
-Автор в итд [@FIRST_TM](https://итд.com/@FIRST_TM), тг [@rationessEps](https://t.me/rationessEps)
+Автор в итд [@FIRST_TM](https://итд.com/@FIRST_TM)
