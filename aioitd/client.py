@@ -180,7 +180,7 @@ class AsyncITDClient:
             headers={"authorization": add_bearer(self.access_token)},
             **kwargs
         )
-        #print(result.text)
+
         if result.text == "UNAUTHORIZED":
             raise UnauthorizedError
         if result.text == "NOT_FOUND":

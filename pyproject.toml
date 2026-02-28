@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "aioitd"
 
-version = "0.2.7"
+version = "0.3.0"
 
 authors = [
   { name="EpsilonRationes", email="rationess@gmal.com" },
