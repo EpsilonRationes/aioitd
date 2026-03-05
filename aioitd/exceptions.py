@@ -28,7 +28,11 @@ class ITDError(Exception):
         'Rate limit exceeded': 'Слишком много запросов',
         'Content, attachments or poll required': "Нельзя создать пустой пост",
         'Already following this user': 'Уже подписаны на этого пользователя',
-        'Session expired': 'Токен истёк'
+        'Session expired': 'Токен истёк',
+        'You do not own this pin': 'Вы не обладаете этим пином',
+        'User already blocked': 'Пользователь уже заблокирован',
+        'Cannot block yourself': "Нельзя заблокировать себя",
+        'User is not blocked': 'Ползователь не заблокирован'
     }
 
     def __init__(self, code: str, message: str):
@@ -41,7 +45,7 @@ class ITDError(Exception):
 
 class UnauthorizedError(ITDError):
     code = "UNAUTHORIZED"
-    message = "Ошибка авторизации (просрочен access токен)"
+    message = "Ошибка авторизации"
 
 
 class ServerError(ITDError):
@@ -146,6 +150,13 @@ class UserBlockedError(ITDError):
     code = "USER_BLOCKED"
 
 
+class PinNotOwnedError(ITDError):
+    code = "PIN_NOT_OWNED"
+
+
+class ContentModerationError(ITDError):
+    code = "CONTENT_MODERATION_ERROR"
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -165,7 +176,9 @@ itd_exceptions = [
     ServerError,
     UploadError,
     UserBlockedError,
-    TokenExpiredError
+    TokenExpiredError,
+    PinNotOwnedError,
+    ContentModerationError
 ]
 
 itd_codes = {}
