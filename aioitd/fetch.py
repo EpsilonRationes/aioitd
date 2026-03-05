@@ -140,3 +140,12 @@ async def put(
         headers: dict | None = None
 ) -> httpx.Response:
     return await request(client.put, url, json=json, params=params, headers=headers)
+
+async def patch(
+        client: httpx.AsyncClient,
+        url: str,
+        json: Any | None = None,
+        params: dict | None = None,
+        headers: dict | None = None
+) -> httpx.Response:
+    return await request(client.patch, url, json=json, params=params, headers=headers)
