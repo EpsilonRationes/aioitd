@@ -35,9 +35,6 @@ async def get_file(
         DeprecationWarning,
         stacklevel=2
     )
-    if isinstance(file_id, str):
-        file_id = UUID(file_id)
-
     response = await get(
         client,
         f"https://{domain}/api/files/{file_id}", 
