@@ -82,7 +82,7 @@ async def request(
             raise ParamsValidationError(type=data['type'], on=data['on'], found=data['found'])
         if 'error' in data:
             if 'retry_after' in data:
-                raise RateLimitError(RateLimitError.code, data['error'], retry_after=data["retryAfter"])
+                raise RateLimitError(RateLimitError.code, data['error'], retry_after=data["retry_after"])
             if data['error'] == 'Too Many Requests':
                 raise Error429(data['error'], data['message'])
             error = data['error']
