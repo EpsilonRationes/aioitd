@@ -309,7 +309,7 @@ async def test_create_post(client, access_token):
         Spoiler(offset=0, length=5)
     ]
     post = await create_post(client, access_token, 'Эта ссылка куда?', spans=spans)
-    await delete_post(post.id)
+    await delete_post(client, access_token, post.id)
 
     with pytest.raises(ForbiddenError):
         await create_post(
