@@ -87,7 +87,8 @@ class OriginalPost(ITDBaseModel):
     id: UUID
     content: Annotated[str, Field(max_length=5000)]
     author: Author
-    attachments: list[Annotated[ImagePostAttachment | InvalidPostAttachment, Field(discriminator="type")]]
+    attachments: list[Annotated[
+        ImagePostAttachmentWithoutFileName | AudioOrVideoPostAttachmentWithoutFileName, Field(discriminator="type")]]
     likes_count: Annotated[int, Field(alias="likesCount")]
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
     comments_count: Annotated[int, Field(alias="commentsCount")]
@@ -114,25 +115,41 @@ class BaseComment(ITDBaseModel):
     replies_count: Annotated[int, Field(alias="repliesCount")]
 
 
-class ImagePostAttachment(ITDBaseModel):
+class ImagePostAttachmentWithoutFileName(ITDBaseModel):
     id: UUID
     type: Literal["image"]
     url: str
-    file_name: Annotated[str, Field(alias='filename')]
-    mime_type: Annotated[str, Field(alias='mimeType')]
+
     # thumbnail_url: Annotated[None | str, Field(alias="thumbnailUrl")]
     width: int
     height: int
+
+
+class ImagePostAttachment(ImagePostAttachmentWithoutFileName):
+    file_name: Annotated[str, Field(alias='filename')]
+    mime_type: Annotated[str, Field(alias='mimeType')]
     size: int
 
 
-class InvalidPostAttachment(ITDBaseModel):
+class AudioOrVideoPostAttachmentWithoutFileName(ITDBaseModel):
     id: UUID
     type: Literal["audio", "video"]
     url: str
     # thumbnail_url: Annotated[None | str, Field(alias="thumbnailUrl")]
     width: None
     height: None
+
+
+class AudioOrVideoPostAttachment(ITDBaseModel):
+    id: UUID
+    type: Literal["audio", "video"]
+    url: str
+    # thumbnail_url: Annotated[None | str, Field(alias="thumbnailUrl")]
+    width: None
+    height: None
+    file_name: Annotated[str, Field(alias='filename')]
+    mime_type: Annotated[str, Field(alias='mimeType')]
+    size: int
 
 
 class CreateAudioCommentAttachment(ITDBaseModel):
@@ -199,8 +216,8 @@ class BaseSpan(ITDBaseModel):
     offset: int
 
 
-class MentionSpan(BaseSpan):
-    type: Literal['mention']
+class Mention(BaseSpan):
+    type: Literal['mention'] = 'mention'
     username: str
 
 
@@ -209,37 +226,37 @@ class HashTagSpan(BaseSpan):
     type: Literal['hashtag'] = 'hashtag'
 
 
-class MonospaceSpan(BaseSpan):
+class Monospace(BaseSpan):
     type: Literal["monospace"] = "monospace"
 
 
-class StrikeSpan(BaseSpan):
+class Strike(BaseSpan):
     type: Literal["strike"] = "strike"
 
 
-class UnderlineSpan(BaseSpan):
+class Underline(BaseSpan):
     type: Literal["underline"] = "underline"
 
 
-class BoldSpan(BaseSpan):
+class Bold(BaseSpan):
     type: Literal["bold"] = "bold"
 
 
-class ItalicSpan(BaseSpan):
+class Italic(BaseSpan):
     type: Literal["italic"] = "italic"
 
 
-class SpoilerSpan(BaseSpan):
+class Spoiler(BaseSpan):
     type: Literal["spoiler"] = "spoiler"
 
 
-class LinkSpan(BaseSpan):
+class Link(BaseSpan):
     type: Literal["link"] = "link"
     url: str
 
 
 type Span = Annotated[
-    MentionSpan | HashTagSpan | MonospaceSpan | StrikeSpan | UnderlineSpan | BoldSpan | ItalicSpan | SpoilerSpan | LinkSpan,
+    Mention | HashTagSpan | Monospace | Strike | Underline | Bold | Italic | Spoiler | Link,
     Field(discriminator='type')
 ]
 

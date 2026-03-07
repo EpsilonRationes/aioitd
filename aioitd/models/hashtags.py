@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from aioitd.models.base import ITDBaseModel, ImagePostAttachment, InvalidPostAttachment, Span, WallRecipient, \
+from aioitd.models.base import ITDBaseModel, ImagePostAttachment, AudioOrVideoPostAttachment, Span, WallRecipient, \
     OriginalPost, ITDDatetime, Comment, Author
 
 
@@ -17,7 +17,7 @@ class HashtagPost(ITDBaseModel):
     id: UUID
     content: Annotated[str, Field(max_length=5000)]
     author: Author
-    attachments: list[Annotated[ImagePostAttachment | InvalidPostAttachment, Field(discriminator="type")]]
+    attachments: list[Annotated[ImagePostAttachment | AudioOrVideoPostAttachment, Field(discriminator="type")]]
     likes_count: Annotated[int, Field(alias="likesCount")]
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
 

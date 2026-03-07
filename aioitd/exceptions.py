@@ -38,7 +38,8 @@ class ITDError(Exception):
         'Cannot follow yourself': "Нельзя подписать на себя",
         'You can only use your own files as banner': 'На баннер можно поставить только свой файл',
         'Banner file not found': 'Файл для баннера не найден',
-        'Username is already taken': 'Имя пользователя уже занято'
+        'Username is already taken': 'Имя пользователя уже занято',
+        "Wall recipient not found": 'Пользователь не найден'
     }
 
     def __init__(self, code: str, message: str):
@@ -168,6 +169,14 @@ class UsernameTakenError(ITDError):
     code = "USERNAME_TAKEN"
 
 
+class VideoRequiresVerificationError(ITDError):
+    code = "VIDEO_REQUIRES_VERIFICATION"
+
+
+class WallClosedError(ITDError):
+    code = "WALL_CLOSED"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -190,7 +199,9 @@ itd_exceptions = [
     TokenExpiredError,
     PinNotOwnedError,
     ContentModerationError,
-    UsernameTakenError
+    UsernameTakenError,
+    VideoRequiresVerificationError,
+    WallClosedError
 ]
 
 itd_codes = {}
