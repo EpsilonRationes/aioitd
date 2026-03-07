@@ -34,7 +34,11 @@ class ITDError(Exception):
         'You do not own this pin': 'Вы не обладаете этим пином',
         'User already blocked': 'Пользователь уже заблокирован',
         'Cannot block yourself': "Нельзя заблокировать себя",
-        'User is not blocked': 'Ползователь не заблокирован'
+        'User is not blocked': 'Пользователь не заблокирован',
+        'Cannot follow yourself': "Нельзя подписать на себя",
+        'You can only use your own files as banner': 'На баннер можно поставить только свой файл',
+        'Banner file not found': 'Файл для баннера не найден',
+        'Username is already taken': 'Имя пользователя уже занято'
     }
 
     def __init__(self, code: str, message: str):
@@ -159,6 +163,11 @@ class PinNotOwnedError(ITDError):
 class ContentModerationError(ITDError):
     code = "CONTENT_MODERATION_ERROR"
 
+
+class UsernameTakenError(ITDError):
+    code = "USERNAME_TAKEN"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -180,7 +189,8 @@ itd_exceptions = [
     UserBlockedError,
     TokenExpiredError,
     PinNotOwnedError,
-    ContentModerationError
+    ContentModerationError,
+    UsernameTakenError
 ]
 
 itd_codes = {}

@@ -1,12 +1,10 @@
 from datetime import datetime
 import datetime as dt
+from enum import Enum
 
 from pydantic import BaseModel, Field, ConfigDict, BeforeValidator
 from typing import Annotated, Literal
 from uuid import UUID
-
-
-
 
 
 def datetime_from_itd_format(val: str) -> datetime:
@@ -37,6 +35,7 @@ class ITDBaseModel(BaseModel):
         }
     )
 
+
 class Pagination(ITDBaseModel):
     limit: int
     has_more: Annotated[bool, Field(alias="hasMore")]
@@ -65,16 +64,23 @@ class WallRecipient(BaseAuthor):
     avatar: str
 
 
+class PinSlug(str, Enum):
+    KIRILL67_202602_INFECTED = "kirill67_202602_infected"
+    KIRILL67_202602_SURVIVOR = "kirill67_202602_survivor"
+
+    def __str__(self):
+        return self.value()
+
+
 class Pin(ITDBaseModel):
     description: str
     name: str
-    slug: str
+    slug: PinSlug
+
 
 class Author(WallRecipient):
     verified: bool
     pin: Pin | None
-
-
 
 
 class OriginalPost(ITDBaseModel):
@@ -90,7 +96,6 @@ class OriginalPost(ITDBaseModel):
     spans: list[Span]
 
     is_deleted: Annotated[bool, Field(alias="isDeleted")]
-
 
 
 class BaseComment(ITDBaseModel):
@@ -128,6 +133,7 @@ class InvalidPostAttachment(ITDBaseModel):
     # thumbnail_url: Annotated[None | str, Field(alias="thumbnailUrl")]
     width: None
     height: None
+
 
 class CreateAudioCommentAttachment(ITDBaseModel):
     filename: str
@@ -183,8 +189,10 @@ class VideoCommentAttachment(CreateVideoCommentAttachment):
 class Comment(BaseComment):
     replies: list[Reply]
 
+
 class Reply(Comment):
     reply_to: Annotated[BaseAuthor, Field(alias="replyTo")]
+
 
 class BaseSpan(ITDBaseModel):
     length: int
@@ -234,6 +242,7 @@ type Span = Annotated[
     MentionSpan | HashTagSpan | MonospaceSpan | StrikeSpan | UnderlineSpan | BoldSpan | ItalicSpan | SpoilerSpan | LinkSpan,
     Field(discriminator='type')
 ]
+
 
 class User(WallRecipient):
     verified: bool
