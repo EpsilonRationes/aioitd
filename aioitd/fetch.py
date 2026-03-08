@@ -79,7 +79,7 @@ async def request(
     try:
         data = result.json()
         if 'type' in data:
-            raise ParamsValidationError(type=data['type'], on=data['on'], found=data['found'])
+            raise ParamsValidationError(type=data['type'], on=data['on'], found=data.get('found'))
         if 'error' in data:
             if 'retry_after' in data:
                 raise RateLimitError(RateLimitError.code, data['error'], retry_after=data["retry_after"])

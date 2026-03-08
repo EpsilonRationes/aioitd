@@ -5,13 +5,13 @@ from uuid import uuid8, UUID
 
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError, \
     UserBlockedError, ConflictError, PinNotOwnedError, UsernameTakenError, UsernameTakenError
-from aioitd.models.base import PinSlug
+from aioitd.models.users import PinSlug
 from tests.api import client, access_token
 
 from aioitd.models.users import FullUser, UserBlockedByMe, PrivateUser, UserBlockMe, Visibility
 from aioitd.api.users import get_user, block, unblock, unfollow, follow, get_me, get_followers, get_following, \
     get_top_clans, get_who_to_follow, search_users, get_pins, set_pin, delete_pin, get_privacy, update_privacy, \
-    get_profile, get_blocked, update_profile
+    get_profile, get_blocked, update_profile, get_follow_status
 
 blocked_user = "zzzuuuk"
 private_username = 'infection'
@@ -365,3 +365,17 @@ async def test_get_blocked(client, access_token):
 
     with pytest.raises(ParamsValidationError):
         await get_blocked(client, access_token, page=0)
+
+
+@pytest.mark.asyncio
+async def test_get_follow_status(client, access_token):
+    with pytest.raises(UnauthorizedError):
+        await get_follow_status(client, '123', [''])
+
+    await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad",  uuid8(), uuid8()])
+
+    await get_follow_status(client, access_token, [])
+
+    await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad"] * 20)
+    with pytest.raises(ParamsValidationError):
+        await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad"]*21)

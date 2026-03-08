@@ -595,6 +595,37 @@ async def get_blocked(
     return pagination, users
 
 
+async def get_follow_status(
+        client: httpx.AsyncClient,
+        access_token: str,
+        user_ids: list[UUID],
+        domain: str = "xn--d1ah4a.com"
+) -> dict[UUID, bool]:
+    """Подписаны ли вы на пользователей.
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        user_ids: список UUID пользователей
+        domain: домен
+
+    Raises:
+        UnauthorizedError: неверный access токен
+        ParamsValidationError: len(user_ids) <= 20
+    """
+    response = await post(
+        client,
+        f"https://{domain}/api/users/follow-status",
+        json={"userIds": list(map(str, user_ids))},
+        headers={"authorization": add_bearer(access_token)}
+    )
+    data = response.json()['data']
+    result = {}
+    for key, value in data.items():
+        result[UUID(key)] = value
+    return result
+
+
 __all__ = [get_user, get_me, follow, unfollow, get_followers, get_following, get_top_clans, get_who_to_follow,
            search_users, PinsResponse, get_pins, set_pin, delete_pin, get_privacy, update_privacy, get_profile,
-           update_profile, block, unblock, get_blocked]
+           update_profile, block, unblock, get_blocked, get_follow_status]
