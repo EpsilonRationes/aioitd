@@ -1,6 +1,6 @@
 from aioitd.models.base import ITDBaseModel, ITDDatetime
 from typing import Annotated
-from uuid import UUID 
+from uuid import UUID
 from pydantic import Field
 
 
@@ -14,4 +14,6 @@ class File(ITDBaseModel):
 
 class GetFile(File):
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
-    
+
+
+__all__ = [File, GetFile]

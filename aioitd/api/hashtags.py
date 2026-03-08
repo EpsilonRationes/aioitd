@@ -1,11 +1,11 @@
-from uuid import UUID
-
 import httpx
 
 from aioitd.exceptions import NotFoundError
 from aioitd.fetch import get
-from aioitd.models.hashtags import Hashtag, HashtagPost
+from aioitd.models.comments import Comment
+from aioitd.models.hashtags import Hashtag
 from aioitd.models.base import Pagination
+from aioitd.models.posts import Post
 
 
 async def search_hashtags(
@@ -57,7 +57,7 @@ async def get_posts_by_hashtag(
         cursor: str | None = None,
         limit: int = 20,
         domain: str = "xn--d1ah4a.com"
-) -> tuple[Hashtag, Pagination, list[HashtagPost]]:
+) -> tuple[Hashtag, Pagination, list[tuple[list[Comment], Post]]]:
     """Посты по хештегу.
 
     Args:
@@ -90,7 +90,21 @@ async def get_posts_by_hashtag(
         raise NotFoundError("NOT_FOUND", f"Хештег '{hashtag_name}' не найден")
     hashtag = Hashtag(**hashtag)
     pagination = Pagination(**data["pagination"])
-    posts = list(map(HashtagPost.model_validate, data["posts"]))
+
+    posts = []
+    for post in data['posts']:
+        if post['wallRecipient'] is not None:
+            post['wallRecipientId'] = post['wallRecipient']['id']
+        else:
+            post['wallRecipientId'] = None
+        post['poll'] = None
+        post['editedAt'] = None
+        post['isViewed'] = False
+        comments = list(map(Comment.model_validate, post['comments']))
+        del post['comments']
+        post = Post(**post)
+        posts.append((comments, post))
     return hashtag, pagination, posts
 
 
+__all__ = [search_hashtags, get_trending_hashtags, get_posts_by_hashtag]

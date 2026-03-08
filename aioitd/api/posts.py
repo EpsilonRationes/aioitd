@@ -1,16 +1,13 @@
-from datetime import datetime
-from typing import Literal, NamedTuple
+from typing import Literal
 from uuid import UUID
 
 import httpx
 
-from aioitd.exceptions import ValidationError
-from aioitd.fetch import add_bearer, delete, get, post, put
-from aioitd.models.base import Comment, datetime_to_itd_format, Monospace, Strike, Underline, Bold, Italic, Spoiler, \
+from aioitd.fetch import add_bearer, delete, get, post, put, decode_jwt_payload
+from aioitd.models.comments import Comment
+from aioitd.models.posts import Post, Poll, UpdatePostResponse, Monospace, Strike, Underline, Bold, Italic, Spoiler, \
     Link
-from aioitd.models.comments import CreateBaseComment, ReplyComment
-from aioitd.models.notifications import Notification
-from aioitd.models.posts import *
+from aioitd.models.base import Pagination, TotalPagination
 
 
 async def get_post(
@@ -18,7 +15,7 @@ async def get_post(
         access_token: str,
         post_id: UUID,
         domain: str = "xn--d1ah4a.com"
-) -> FullPost:
+) -> tuple[list[Comment], Post]:
     """Получить пост.
     
     Args:
@@ -39,7 +36,10 @@ async def get_post(
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()['data']
-    return FullPost(**data)
+    comments = list(map(Comment.model_validate, data['comments']))
+    del data['comments']
+    post = Post(**data)
+    return comments, post
 
 
 async def delete_post(
@@ -244,7 +244,7 @@ async def get_posts_by_user(
         limit: int = 20,
         sort: Literal["new", "popular"] = "new",
         domain: str = "xn--d1ah4a.com"
-) -> tuple[Pagination, list[UserPost]]:
+) -> tuple[Pagination, list[Post]]:
     """Посты на стене пользователя.
     
     Args:
@@ -273,7 +273,7 @@ async def get_posts_by_user(
     )
     data = response.json()["data"]
     pagination = Pagination(**data["pagination"])
-    posts = list(map(UserPost.model_validate, data["posts"]))
+    posts = list(map(Post.model_validate, data["posts"]))
 
     return pagination, posts
 
@@ -285,7 +285,7 @@ async def get_posts_by_user_liked(
         cursor: str | None = None,
         limit: int = 20,
         domain: str = "xn--d1ah4a.com"
-) -> tuple[Pagination, list[LikedPost]]:
+) -> tuple[Pagination, list[Post]]:
     """Посты на которые пользователей поставил лайк.
     
     Args:
@@ -311,7 +311,10 @@ async def get_posts_by_user_liked(
     )
     data = response.json()["data"]
     pagination = Pagination(**data["pagination"])
-    posts = list(map(LikedPost.model_validate, data["posts"]))
+    for post in data['posts']:
+        post['wallRecipient'] = None
+
+    posts = list(map(Post.model_validate, data["posts"]))
 
     return pagination, posts
 
@@ -323,7 +326,7 @@ async def get_posts_by_user_wall(
         cursor: None = None,
         limit: int = 20,
         domain: str = "xn--d1ah4a.com"
-) -> tuple[Pagination, list[UserPost]]:
+) -> tuple[Pagination, list[Post]]:
     """Посты на стене пользователя, сделанные не пользователем.
     
     Args:
@@ -349,7 +352,50 @@ async def get_posts_by_user_wall(
     )
     data = response.json()["data"]
     pagination = Pagination(**data["pagination"])
-    posts = list(map(UserPost.model_validate, data["posts"]))
+    posts = list(map(Post.model_validate, data["posts"]))
+
+    return pagination, posts
+
+
+async def get_posts(
+        client: httpx.AsyncClient,
+        access_token: str,
+        cursor: None = None,
+        limit: int = 20,
+        tab: Literal['popular', 'following', 'clan'] = 'popular',
+        domain: str = "xn--d1ah4a.com"
+) -> tuple[Pagination, list[Post]]:
+    """Лента.
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        cursor: next_cursor на предыдущей странице
+        limit: максимальное количество выданных постов
+        tab: популярные, подписка, кланы
+        domain: домен
+
+    Raises:
+        UnauthorizedError: ошибка авторизации
+        ValidationError: 1 <= limit <= 50
+    """
+    response = await get(
+        client,
+        f"https://{domain}/api/posts?limit=20&tab=popular",
+        params={"tab": tab, "limit": limit} | (
+            {} if cursor is None else {"cursor": cursor}),
+        headers={"authorization": add_bearer(access_token)}
+    )
+    data = response.json()["data"]
+    pagination = Pagination(**data["pagination"])
+
+    for post in data['posts']:
+        if 'authorId' in post:
+            del post['authorId']
+        if 'wallRecipient' not in post:
+            post['wallRecipient'] = None
+
+    posts = list(map(Post.model_validate, data["posts"]))
 
     return pagination, posts
 
@@ -362,7 +408,7 @@ async def get_post_comments(
         sort: Literal["popular", "newest", "oldest"] = "popular",
         limit: int = 20,
         domain: str = "xn--d1ah4a.com"
-) -> tuple[CommentPagination, list[Comment]]:
+) -> tuple[TotalPagination, list[Comment]]:
     """Получить комментарии под постом.
     
     Args:
@@ -386,7 +432,7 @@ async def get_post_comments(
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()["data"]
-    pagination = CommentPagination(total=data["total"], nextCursor=data["nextCursor"], hasMore=data["hasMore"])
+    pagination = TotalPagination(total=data["total"], nextCursor=data["nextCursor"], hasMore=data["hasMore"])
     posts = list(map(Comment.model_validate, data["comments"]))
 
     return pagination, posts
@@ -438,7 +484,7 @@ async def create_post(
         options: list[str] | None = None,
         spans: list[Monospace | Strike | Underline | Bold | Italic | Spoiler | Link] = None,
         domain: str = "xn--d1ah4a.com"
-) -> UserPostWithoutAuthorId:
+) -> Post:
     """Создать пост.
     
     Args:
@@ -498,11 +544,14 @@ async def create_post(
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
-    for attachment in data['attachments']:
-        if attachment['type'] == 'audio':
-            del attachment['duration']
 
-    return UserPostWithoutAuthorId(**data)
+    data['author']['id'] = decode_jwt_payload(access_token)['sub']
+    data['isViewed'] = False
+    data['dominantEmoji'] = None
+    data['editedAt'] = None
+    data['originalPost'] = None
+
+    return Post(**data)
 
 
 async def update_post(
@@ -545,7 +594,7 @@ async def repost(
         post_id: UUID | str,
         content: str = "",
         domain: str = "xn--d1ah4a.com"
-) -> PostWithoutAuthorId:
+) -> Post:
     """Репост.
 
     Args:
@@ -569,4 +618,16 @@ async def repost(
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
-    return PostWithoutAuthorId(**data)
+    data['author']['id'] = decode_jwt_payload(access_token)['sub']
+    data['isViewed'] = False
+    data['poll'] = None
+    data['dominantEmoji'] = None
+    data['editedAt'] = None
+    data['wallRecipient'] = None
+
+    return Post(**data)
+
+
+__all__ = [get_post, delete_post, restore_post, like_post, delete_like_post, view_post, pin_post, unpin_post,
+           get_posts_by_user, get_posts_by_user_liked, get_posts_by_user_wall, get_posts, get_post_comments, vote,
+           create_post, update_post, repost]

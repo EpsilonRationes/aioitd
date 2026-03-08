@@ -2,8 +2,8 @@ from uuid import UUID
 
 import httpx
 
-from aioitd.fetch import add_bearer, delete, get, post, put, patch
-from aioitd.models.comments import CreateBaseComment, ReplyComment, UpdateCommentResponse
+from aioitd.fetch import add_bearer, delete, post, patch
+from aioitd.models.comments import Reply, Comment, UpdateCommentResponse
 
 
 async def comment(
@@ -13,7 +13,7 @@ async def comment(
         content: str = "",
         attachment_ids: list[UUID] | None = None,
         domain: str = "xn--d1ah4a.com"
-) -> CreateBaseComment:
+) -> Comment:
     """
     
     Args:
@@ -44,7 +44,8 @@ async def comment(
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
-    return CreateBaseComment(**data)
+    data['replies'] = []
+    return Comment(**data)
 
 
 async def replies(
@@ -55,7 +56,7 @@ async def replies(
         replay_to_user_id: UUID = None,
         attachment_ids: list[UUID] = None,
         domain: str = "xn--d1ah4a.com"
-) -> ReplyComment:
+) -> Reply:
     """Ответить на комментарий
 
     Args:
@@ -87,7 +88,7 @@ async def replies(
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
-    return ReplyComment(**data)
+    return Reply(**data)
 
 
 async def edit_comment(
@@ -228,3 +229,6 @@ async def delete_like_comment(
     )
     data = response.json()
     return data["likesCount"]
+
+
+__all__ = [delete_comment, like_comment, delete_like_comment, comment, edit_comment, replies, restore_comment]

@@ -1,12 +1,13 @@
-from typing import Any, Literal, NamedTuple
+from typing import NamedTuple
 from uuid import UUID
 
-from aioitd.fetch import get, add_bearer, post, delete, put
 import httpx
 
-from aioitd.models.users import BlockedAuthor, FullUser, BlockedUser, Me, PinWithDate, UserBlockMe, PrivateUser, FullMe, \
-    FollowUser, PagePagination, Clan, Privacy, Profile, Visibility
-from aioitd.models.base import User, PinSlug
+from aioitd.fetch import get, add_bearer, post, delete, put
+from aioitd.models.users import BlockedAuthor, FullUser, UserBlockedByMe, Me, PinWithDate, UserBlockMe, PrivateUser, \
+    FullMe, \
+    UserWithFollowing, Clan, Privacy, Profile, Visibility, UserWithFollowersCount, PinSlug
+from aioitd.models.base import PagePagination
 
 
 async def get_user(
@@ -14,7 +15,7 @@ async def get_user(
         access_token: str,
         username_or_id: str | UUID,
         domain: str = "xn--d1ah4a.com"
-) -> FullUser | BlockedUser | UserBlockMe | PrivateUser:
+) -> FullUser | UserBlockedByMe | UserBlockMe | PrivateUser:
     """Получить данные пользователя.
 
     Args:
@@ -35,7 +36,7 @@ async def get_user(
     )
     data = response.json()
     if 'isBlockedByMe' in data:
-        return BlockedUser(**data)
+        return UserBlockedByMe(**data)
     elif 'isBlockedByThem' in data:
         return UserBlockMe(**data)
     elif 'isPrivate' in data:
@@ -44,7 +45,7 @@ async def get_user(
         return FullUser(**data)
 
 
-async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn--d1ah4a.com"):
+async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn--d1ah4a.com") -> FullMe:
     """Получить текущего пользователя.
 
     Args:
@@ -61,6 +62,8 @@ async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
+    data['isFollowedBy'] = False
+    data['isFollowing'] = False
     return FullMe(**data)
 
 
@@ -132,7 +135,7 @@ async def get_followers(
         page: int = 1,
         limit: int = 30,
         domain: str = "xn--d1ah4a.com"
-) -> tuple[PagePagination, list[FollowUser]]:
+) -> tuple[PagePagination, list[UserWithFollowing]]:
     """Получить подписчиков пользователя.
 
     Args:
@@ -158,7 +161,7 @@ async def get_followers(
     )
     data = response.json()["data"]
     pagination = PagePagination(**data['pagination'])
-    users = list(map(FollowUser.model_validate, data["users"]))
+    users = list(map(UserWithFollowing.model_validate, data["users"]))
 
     return pagination, users
 
@@ -170,7 +173,7 @@ async def get_following(
         page: int = 1,
         limit: int = 30,
         domain: str = "xn--d1ah4a.com"
-) -> tuple[PagePagination, list[FollowUser]]:
+) -> tuple[PagePagination, list[UserWithFollowing]]:
     """Получить подписчики пользователя.
 
     Args:
@@ -197,7 +200,7 @@ async def get_following(
     )
     data = response.json()["data"]
     pagination = PagePagination(**data['pagination'])
-    users = list(map(FollowUser.model_validate, data["users"]))
+    users = list(map(UserWithFollowing.model_validate, data["users"]))
 
     return pagination, users
 
@@ -231,7 +234,7 @@ async def get_who_to_follow(
         client: httpx.AsyncClient,
         access_token: str,
         domain: str = "xn--d1ah4a.com"
-) -> list[User]:
+) -> list[UserWithFollowersCount]:
     """Получить топ по подпискам.
     
     Args:
@@ -248,7 +251,7 @@ async def get_who_to_follow(
         headers={"authorization": add_bearer(access_token)},
     )
     data = response.json()
-    return list(map(User.model_validate, data["users"]))
+    return list(map(UserWithFollowersCount.model_validate, data["users"]))
 
 
 async def search_users(
@@ -257,7 +260,7 @@ async def search_users(
         query: str,
         limit: int = 20,
         domain: str = "xn--d1ah4a.com"
-) -> list[User]:
+) -> list[UserWithFollowersCount]:
     """Поиск пользователей.
 
     Args:
@@ -278,7 +281,7 @@ async def search_users(
         headers={"authorization": add_bearer(access_token)},
     )
     data = response.json()["data"]
-    return list(map(User.model_validate, data['users']))
+    return list(map(UserWithFollowersCount.model_validate, data['users']))
 
 
 class PinsResponse(NamedTuple):
@@ -590,3 +593,8 @@ async def get_blocked(
     pagination = PagePagination(**data["pagination"])
     users = list(map(BlockedAuthor.model_validate, data["users"]))
     return pagination, users
+
+
+__all__ = [get_user, get_me, follow, unfollow, get_followers, get_following, get_top_clans, get_who_to_follow,
+           search_users, PinsResponse, get_pins, set_pin, delete_pin, get_privacy, update_privacy, get_profile,
+           update_profile, block, unblock, get_blocked]

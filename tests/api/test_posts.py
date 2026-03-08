@@ -12,7 +12,7 @@ from tests.api import client, access_token
 
 from aioitd.api.posts import get_post, delete_post, restore_post, create_post, like_post, delete_like_post, pin_post, \
     unpin_post, get_posts_by_user, get_posts_by_user_liked, get_posts_by_user_wall, get_post_comments, update_post, \
-    repost
+    repost, get_posts
 
 blocked_user = "zzzuuuk"
 
@@ -204,6 +204,31 @@ async def test_get_posts_by_user_wall(client, access_token):
 
 
 @pytest.mark.asyncio
+async def test_get_posts(client, access_token):
+    with pytest.raises(UnauthorizedError):
+        await get_posts(client, '123')
+
+    with pytest.raises(ParamsValidationError):
+        await get_posts(client, access_token, limit=0)
+
+    await get_posts(client, access_token, limit=1)
+    await get_posts(client, access_token, limit=50)
+
+    with pytest.raises(ParamsValidationError):
+        await get_posts(client, access_token, limit=51)
+
+
+    for tab in ['popular', 'following', 'clan']:
+        cursor = None
+        for _ in range(10):
+            pagination, users = await get_posts(client, access_token, cursor=cursor, tab=tab)
+            cursor = pagination.next_cursor
+            if cursor is None:
+                break
+
+
+
+@pytest.mark.asyncio
 async def test_get_post_comments(client, access_token):
     with pytest.raises(UnauthorizedError):
         await get_post_comments(client, '123', uuid8())
@@ -267,6 +292,9 @@ async def test_repost(client, access_token):
     with pytest.raises(ParamsValidationError):
         await repost(client, access_token, uuid8(), '1' * 1001)
 
+    _, posts = await get_posts(client, access_token)
+    post = await repost(client, access_token, posts[0].id)
+    await delete_post(client, access_token, post.id)
 
 @pytest.mark.asyncio
 async def test_create_post(client, access_token):

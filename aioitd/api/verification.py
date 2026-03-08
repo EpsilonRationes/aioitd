@@ -1,10 +1,6 @@
-from typing import Literal, NamedTuple
-from uuid import UUID
-
 import httpx
 
 from aioitd.fetch import add_bearer, get, post
-from aioitd.models.notifications import Notification
 
 
 async def get_verification_status(
@@ -25,7 +21,7 @@ async def get_verification_status(
     """
     response = await get(
         client,
-        f"https://{domain}/api/verification/status", 
+        f"https://{domain}/api/verification/status",
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
@@ -52,9 +48,12 @@ async def submit_verification(
     """
     response = await post(
         client,
-        f"https://{domain}/api/verification/submit", 
+        f"https://{domain}/api/verification/submit",
         json={"videoUrl": video_url},
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
     return data
+
+
+__all__ = [get_verification_status, submit_verification]

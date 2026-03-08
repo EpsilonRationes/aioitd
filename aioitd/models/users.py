@@ -1,97 +1,9 @@
 from enum import Enum
 
-from aioitd.models.base import Author, BaseAuthor, ITDDatetime, ITDBaseModel, WallRecipient, Pin
+from aioitd.models.base import ITDDatetime, ITDBaseModel
 from typing import Annotated, Literal
 from pydantic import Field
 from uuid import UUID
-
-
-class LastSeen(ITDBaseModel):
-    unit: str
-    value: int | None = None
-
-
-class BlockedUser(Author):
-    is_blocked_by_me: Annotated[bool, Field(alias="isBlockedByMe")]
-    online: bool
-    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
-
-
-class BaseFullUser(Author):
-    bio: str | None
-    banner: str | None
-    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
-    posts_count: Annotated[int, Field(alias="postsCount")]
-    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
-    following_count: Annotated[int, Field(alias="followingCount")]
-    followers_count: Annotated[int, Field(alias="followersCount")]
-    likes_visibility: Annotated[str, Field(alias="likesVisibility")]
-
-
-class FullMe(BaseFullUser):
-    is_private: Annotated[bool, Field(alias="isPrivate")]
-    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
-    is_phone_verified: Annotated[bool, Field(alias="isPhoneVerified")]
-
-
-class UserBlockMe(Author):
-    is_blocked_by_them: Annotated[bool, Field(alias="isBlockedByThem")]
-    is_private: Annotated[bool, Field(alias="isPrivate")]
-    is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
-    is_following: Annotated[bool, Field(alias="isFollowing")]
-    following_count: Annotated[int, Field(alias="followingCount")]
-    followers_count: Annotated[int, Field(alias="followersCount")]
-    posts_count: Annotated[int, Field(alias="postsCount")]
-    pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
-    banner: str | None
-    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
-    online: bool
-    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
-
-
-class PrivateUser(Author):
-    is_private: Annotated[Literal[True], Field(alias="isPrivate")]
-    banner: str | None
-    posts_count: Annotated[int, Field(alias="postsCount")]
-    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
-    following_count: Annotated[int, Field(alias="followingCount")]
-    followers_count: Annotated[int, Field(alias="followersCount")]
-    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
-    is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
-    is_following: Annotated[bool, Field(alias="isFollowing")]
-    pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
-    online: bool
-    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
-
-
-class FullUser(BaseFullUser):
-    wall_access: Annotated[Literal["everyone", "followers", "mutual", "nobody"], Field(alias="wallAccess")]
-    is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
-    is_following: Annotated[bool, Field(alias="isFollowing")]
-    pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
-    online: bool
-    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
-
-
-class PagePagination(ITDBaseModel):
-    total: int
-    has_more: Annotated[bool, Field(alias="hasMore")]
-    limit: int
-    page: int
-
-
-class FollowUser(WallRecipient):
-    verified: bool
-    is_following: Annotated[bool, Field(alias="isFollowing")]
-
-
-class Clan(ITDBaseModel):
-    avatar: str
-    member_count: Annotated[int, Field(alias="memberCount")]
-
-
-class PinWithDate(Pin):
-    granted_at: Annotated[ITDDatetime, Field(alias="grantedAt")]
 
 
 class Visibility(str, Enum):
@@ -111,24 +23,126 @@ class Privacy(ITDBaseModel):
     show_last_seen: Annotated[bool, Field(alias="showLastSeen")]
 
 
-class UserWithRole(WallRecipient):
+class Profile(ITDBaseModel):
+    authenticated: bool
+    banned: bool
+    user: UserWithRoles
+
+
+class LastSeen(ITDBaseModel):
+    unit: str
+    value: int | None = None
+
+
+class Clan(ITDBaseModel):
+    avatar: str
+    member_count: Annotated[int, Field(alias="memberCount")]
+
+
+class PinSlug(str, Enum):
+    KIRILL67_202602_INFECTED = "kirill67_202602_infected"
+    KIRILL67_202602_SURVIVOR = "kirill67_202602_survivor"
+
+    def __str__(self):
+        return self.value()
+
+
+class Pin(ITDBaseModel):
+    description: str
+    name: str
+    slug: PinSlug
+
+
+class PinWithDate(Pin):
+    granted_at: Annotated[ITDDatetime, Field(alias="grantedAt")]
+
+
+class UserStab(ITDBaseModel):
+    id: UUID
+    username: str | None
+    display_name: Annotated[str, Field(alias="displayName")]
+
+
+class UserWithAvatar(UserStab):
+    avatar: str
+
+
+class UserWithVerified(UserWithAvatar):
     verified: bool
+
+
+class UserWithFollowersCount(UserWithVerified):
+    followers_count: Annotated[int, Field(alias="followersCount")]
+
+
+class UserWithPin(UserWithVerified):
+    pin: Pin | None
+
+
+class UserWithRoles(UserWithVerified):
     is_phone_verified: Annotated[bool, Field(alias="isPhoneVerified")]
     roles: list[str | Literal["user"]]
     bio: str | None
 
 
-class Profile(ITDBaseModel):
-    authenticated: bool
-    banned: bool
-    user: UserWithRole
+class UserWithFollowing(UserWithVerified):
+    is_following: Annotated[bool, Field(alias="isFollowing")]
 
 
-class BlockedAuthor(WallRecipient):
-    verified: bool
+class BlockedAuthor(UserWithVerified):
     blocked_at: Annotated[ITDDatetime, Field(alias="blockedAt")]
 
 
-class Me(BaseAuthor):
+class Me(UserStab):
     bio: str | None
     update_at: Annotated[ITDDatetime, Field(alias="updatedAt")]
+
+
+class UserBlockedByMe(UserWithPin):
+    is_blocked_by_me: Annotated[bool, Field(alias="isBlockedByMe")]
+    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
+    online: bool
+
+
+class User(UserWithPin):
+    wall_access: Annotated[Visibility, Field(alias="wallAccess")]
+    banner: str | None
+    is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
+    is_following: Annotated[bool, Field(alias="isFollowing")]
+    posts_count: Annotated[int, Field(alias="postsCount")]
+    following_count: Annotated[int, Field(alias="followingCount")]
+    followers_count: Annotated[int, Field(alias="followersCount")]
+
+
+class BaseFullUser(User):
+    bio: str | None
+    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
+    likes_visibility: Annotated[str, Field(alias="likesVisibility")]
+
+
+class FullMe(BaseFullUser):
+    is_private: Annotated[bool, Field(alias="isPrivate")]
+    is_phone_verified: Annotated[bool, Field(alias="isPhoneVerified")]
+
+
+class LastSeenMixin(User):
+    pinned_post_id: Annotated[UUID | None, Field(alias="pinnedPostId")]
+    last_seen: Annotated[None | LastSeen, Field(alias="lastSeen")]
+    online: bool
+
+
+class FullUser(BaseFullUser, LastSeenMixin): ...
+
+
+class UserBlockMe(LastSeenMixin):
+    is_private: Annotated[bool, Field(alias="isPrivate")]
+    is_blocked_by_them: Annotated[bool, Field(alias="isBlockedByThem")]
+
+
+class PrivateUser(LastSeenMixin):
+    is_private: Annotated[bool, Field(alias="isPrivate")]
+
+
+__all__ = [BaseFullUser, BlockedAuthor, Clan, FullMe, FullUser, LastSeen, LastSeenMixin, Me, Pin, PinSlug, PinWithDate,
+           Privacy, PrivateUser, Profile, User, UserBlockedByMe, UserBlockMe, UserStab, UserWithAvatar,
+           UserWithFollowersCount, UserWithFollowing, UserWithPin, UserWithRoles, UserWithVerified, Visibility]

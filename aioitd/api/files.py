@@ -1,15 +1,11 @@
-import io
-import os
-from typing import Any
 from uuid import UUID
+from typing import IO
+import warnings
 
-from aioitd.fetch import delete, get, post, add_bearer
 import httpx
 
+from aioitd.fetch import delete, get, post, add_bearer
 from aioitd.models.files import GetFile, File
-from typing import IO
-
-import warnings
 
 
 async def get_file(
@@ -31,13 +27,13 @@ async def get_file(
 
     """
     warnings.warn(
-        "похожу этот endpoint удалили",
+        "похоже этот endpoint удалили",
         DeprecationWarning,
         stacklevel=2
     )
     response = await get(
         client,
-        f"https://{domain}/api/files/{file_id}", 
+        f"https://{domain}/api/files/{file_id}",
         headers={"authorization": add_bearer(access_token)}
     )
     data = response.json()
@@ -72,7 +68,7 @@ async def upload_file(
     """
     response = await post(
         client,
-        f"https://{domain}/api/files/upload", 
+        f"https://{domain}/api/files/upload",
         files={'file': file}, timeout=1000,
         headers={"authorization": add_bearer(access_token)}
     )
@@ -100,6 +96,9 @@ async def delete_file(
     """
     await delete(
         client,
-        f"https://{domain}/api/files/{file_id}", 
+        f"https://{domain}/api/files/{file_id}",
         headers={"authorization": add_bearer(access_token)}
     )
+
+
+__all__ = [get_file, upload_file, delete_file]

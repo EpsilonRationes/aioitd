@@ -8,7 +8,7 @@ from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsVali
 from aioitd.models.base import PinSlug
 from tests.api import client, access_token
 
-from aioitd.models.users import FullUser, BlockedUser, PrivateUser, UserBlockMe, Visibility
+from aioitd.models.users import FullUser, UserBlockedByMe, PrivateUser, UserBlockMe, Visibility
 from aioitd.api.users import get_user, block, unblock, unfollow, follow, get_me, get_followers, get_following, \
     get_top_clans, get_who_to_follow, search_users, get_pins, set_pin, delete_pin, get_privacy, update_privacy, \
     get_profile, get_blocked, update_profile
@@ -52,7 +52,7 @@ async def test_get_user(client, access_token):
 
     nowkie = await get_user(client, access_token, 'nowkie')
 
-    assert isinstance(nowkie, BlockedUser)
+    assert isinstance(nowkie, UserBlockedByMe)
 
     await unblock(client, access_token, 'nowkie')
 

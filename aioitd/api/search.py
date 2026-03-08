@@ -4,16 +4,16 @@ from aioitd.fetch import get
 import httpx
 
 from aioitd.models.hashtags import Hashtag
-from aioitd.models.base import User
+from aioitd.models.users import UserWithFollowersCount
 
 
 async def search(
         client: httpx.AsyncClient,
         query: str,
-        user_limit: int | None = 20 ,
+        user_limit: int | None = 20,
         hashtag_limit: int | None = 20,
         domain: str = "xn--d1ah4a.com"
-) -> tuple[list[Hashtag], list[User]]:
+) -> tuple[list[Hashtag], list[UserWithFollowersCount]]:
     """Поиск
 
     Args:
@@ -39,5 +39,8 @@ async def search(
     )
     data = response.json()["data"]
     hashtags = list(map(Hashtag.model_validate, data["hashtags"]))
-    users = list(map(User.model_validate, data["users"]))
+    users = list(map(UserWithFollowersCount.model_validate, data["users"]))
     return hashtags, users
+
+
+__all__ = [search]

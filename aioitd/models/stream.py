@@ -20,3 +20,6 @@ class ConnectedEvent(ITDBaseModel):
 class NotificationEvent(Notification):
     user_id: Annotated[UUID, Field(alias="userId")]
     sound: bool
+
+
+__all__ = [SSEEvent, ConnectedEvent, NotificationEvent]

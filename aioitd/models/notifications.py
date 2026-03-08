@@ -5,6 +5,7 @@ from enum import Enum
 from pydantic import Field
 
 from aioitd.models.base import ITDBaseModel, ITDDatetime
+from aioitd.models.users import UserWithAvatar
 
 
 class NotificationType(str, Enum):
@@ -20,11 +21,7 @@ class NotificationType(str, Enum):
         return self.value
 
 
-class Actor(ITDBaseModel):
-    id: UUID
-    username: str | None
-    display_name: Annotated[str, Field(alias="displayName")]
-    avatar: str
+class Actor(UserWithAvatar):
     is_followed_by: Annotated[bool, Field(alias="isFollowedBy")]
     is_following: Annotated[bool, Field(alias="isFollowing")]
 
@@ -39,3 +36,6 @@ class Notification(ITDBaseModel):
     target_id: Annotated[UUID | None, Field(alias="targetId")]
     target_type: Annotated[Literal['post'] | None, Field(alias="targetType")]
     type: NotificationType
+
+
+__all__ = [NotificationType, Actor, Notification]

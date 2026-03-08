@@ -1,12 +1,12 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Callable
+import json
 
 import httpx
 import httpx_sse
 
 from aioitd.fetch import add_bearer
-import json
-from aioitd.models.stream import *
+from aioitd.models.stream import SSEEvent, ConnectedEvent, NotificationEvent
 
 ITD_SSE_PING = 15
 
@@ -58,3 +58,6 @@ async def connect_notifications(
             ),
     ) as event_source:
         yield _sse_wrapper(event_source.aiter_sse)
+
+
+__all__ = [connect_notifications]
