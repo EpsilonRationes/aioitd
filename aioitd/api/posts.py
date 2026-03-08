@@ -660,6 +660,8 @@ async def repost(
     return Post(**data)
 
 
-__all__ = [get_post, delete_post, restore_post, like_post, delete_like_post, view_post, pin_post, unpin_post,
-           get_posts_by_user, get_posts_by_user_liked, get_posts_by_user_wall, get_posts, get_post_comments, vote,
-           create_post, update_post, repost]
+__all__ = [
+    'get_post', 'delete_post', 'restore_post', 'like_post', 'delete_like_post', 'view_post', 'pin_post', 'unpin_post',
+    'get_posts_by_user', 'get_posts_by_user_liked', 'get_posts_by_user_wall', 'get_posts', 'get_post_comments', 'vote',
+    'create_post', 'update_post', 'repost'
+]

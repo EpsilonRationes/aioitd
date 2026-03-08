@@ -11,4 +11,4 @@ class Report(ITDBaseModel):
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
 
 
-__all__ = [Report]
+__all__ = ['Report']

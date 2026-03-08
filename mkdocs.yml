@@ -1,11 +1,17 @@
 site_name: aioitd
 
-theme: 'material'
+theme:
+  name: 'material'
+  features:
+    - navigation.indexes
 
 markdown_extensions:
   - toc:
       permalink: true
-      title: "На странице"
+      title: "Содержание"
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
 
 plugins:
   - search
@@ -14,15 +20,37 @@ plugins:
           python:
             paths: [.]
             options:
+              extensions:
+                - griffe_typingdoc
+              docstring_style: google
+              show_source: false
               members_order: source
               separate_signature: true
-              filters: ['!^_']
+              filters:
+                - '!^_'
+                - '!model_config'
               docstring_options:
                 ignore_init_summary: true
               merge_init_into_class: true
               show_signature_annotations: true
               signature_crossrefs: true
+              show_labels: false
+              show_if_no_docstring: true
+              preload_modules:
+                - httpx
+                - httpx_sse
+              inherited_members: true
+              unwrap_annotated: true
+              docstring_section_style: spacy
+              show_symbol_type_heading: true
+              show_symbol_type_toc: true
             import:
               - url: https://docs.python.org/3/objects.inv
                 domains: [py, std]
               - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
+
+
+
+
+
+

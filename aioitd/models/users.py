@@ -153,7 +153,9 @@ class PrivateUser(LastSeenMixin):
     is_private: Annotated[bool, Field(alias="isPrivate")]
 
 
-__all__ = [BaseFullUser, BlockedAuthor, Clan, FullMe, FullUser, LastSeen, LastSeenMixin, Me, Pin, PinSlug, PinWithDate,
-           Privacy, PrivateUser, Profile, User, UserBlockedByMe, UserBlockMe, UserStab, UserWithAvatar,
-           UserWithFollowersCount, UserWithFollowing, UserWithPin, UserWithRoles, UserWithVerified, Visibility,
-           LastSeenUnit]
+__all__ = [
+    'BaseFullUser', 'BlockedAuthor', 'Clan', 'FullMe', 'FullUser', 'LastSeen', 'LastSeenMixin', 'Me', 'Pin', 'PinSlug',
+    'PinWithDate', 'Privacy', 'PrivateUser', 'Profile', 'User', 'UserBlockedByMe', 'UserBlockMe', 'UserStab',
+    'UserWithAvatar', 'UserWithFollowersCount', 'UserWithFollowing', 'UserWithPin', 'UserWithRoles', 'UserWithVerified',
+    'Visibility', 'LastSeenUnit'
+]

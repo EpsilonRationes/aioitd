@@ -663,6 +663,8 @@ async def get_follow_status(
     return result
 
 
-__all__ = [get_user, get_me, follow, unfollow, get_followers, get_following, get_top_clans, get_who_to_follow,
-           search_users, PinsResponse, get_pins, set_pin, delete_pin, get_privacy, update_privacy, get_profile,
-           update_profile, block, unblock, get_blocked, get_follow_status]
+__all__ = [
+    'get_user', 'get_me', 'follow', 'unfollow', 'get_followers', 'get_following', 'get_top_clans', 'get_who_to_follow',
+    'search_users', 'PinsResponse', 'get_pins', 'set_pin', 'delete_pin', 'get_privacy', 'update_privacy', 'get_profile',
+    'update_profile', 'block', 'unblock', 'get_blocked', 'get_follow_status'
+]

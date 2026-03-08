@@ -1,8 +1,6 @@
 from datetime import datetime
 import datetime as dt
-from enum import Enum
 from typing import Annotated
-from uuid import UUID
 
 from pydantic import BaseModel, Field, ConfigDict, BeforeValidator
 
@@ -55,24 +53,7 @@ class PagePagination(ITDBaseModel):
     page: int
 
 
-class AttachmentType(str, Enum):
-    IMAGE = 'image'
-    AUDIO = 'audio'
-    VIDEO = 'video'
-
-
-class Attachment(ITDBaseModel):
-    id: UUID
-    type: AttachmentType
-    url: str
-    width: int | None = None
-    height: int | None = None
-    file_name: Annotated[str | None, Field(alias='filename')] = None
-    mime_type: Annotated[str | None, Field(alias='mimeType')] = None
-    size: int | None = None
-    duration: int | None = None
-    order: int | None = None
-
-
-__all__ = [Attachment, AttachmentType, PagePagination, Pagination, TotalPagination, ITDDatetime, ITDDatetime,
-           datetime_from_itd_format, datetime_to_itd_format]
+__all__ = [
+    'PagePagination', 'Pagination', 'TotalPagination', 'ITDDatetime', 'ITDDatetime',
+    'datetime_from_itd_format', 'datetime_to_itd_format', 'ITDBaseModel'
+]

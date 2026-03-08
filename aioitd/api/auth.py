@@ -16,13 +16,27 @@ async def refresh(
         refresh_token: refresh токен
         domain: домен
 
-    Returns: access токен
+    Returns:
+        access токен
 
     Raises:
         TokenNotFoundError: Такого токена не существует
         TokenRevokedError: Токен отозван
         TokenMissingError: Токен не указан (равен пустой строке)
         TokenExpiredError: Токен истёк
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh
+
+        refresh_token = "ВАШ ТОКЕН"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                print(access_token)
+        ```
     """
     response = await post(
         client,
@@ -39,12 +53,24 @@ async def logout(
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> None:
-    """Выйти из аккаунта, отозвать токен. Работает при любом токене. Просроченном, не существующем и пустой строкой тоже.
+    """Выйти из аккаунта, отозвать токен. Работает при любом токене: просроченном, не существующим, пустой строкой.
 
     Args:
         client: httpx.AsyncClient
         refresh_token: refresh токен
         domain: домен
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import logout
+
+        refresh_token = "ВАШ ТОКЕН"
+
+        async def main():
+            async with AsyncClient() as client:
+                await logout(client, refresh_token)
+        ```
     """
     await post(
         client,
@@ -77,6 +103,19 @@ async def change_password(
         InvalidOldPasswordError: Указан неверный старый пароль
         SomePasswordError: Новый пароль должен отличать от старого
 
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, change_password
+
+        refresh_token = "ВАШ ТОКЕН"
+        password = "ВАШ ПАРОЛЬ"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                await change_password(client, access_token, password, "НОВЫЙ ПАРОЛЬ")
+        ```
     """
     await post(
         client,
@@ -87,4 +126,4 @@ async def change_password(
     )
 
 
-__all__ = [change_password, logout, refresh]
+__all__ = ["change_password", "logout", "refresh"]

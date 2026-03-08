@@ -1,7 +1,10 @@
-from aioitd.models.base import ITDBaseModel, ITDDatetime
+from enum import Enum
 from typing import Annotated
 from uuid import UUID
+
 from pydantic import Field
+
+from aioitd.models.base import ITDBaseModel, ITDDatetime
 
 
 class File(ITDBaseModel):
@@ -16,4 +19,21 @@ class GetFile(File):
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
 
 
-__all__ = [File, GetFile]
+class AttachmentType(str, Enum):
+    IMAGE = 'image'
+    AUDIO = 'audio'
+    VIDEO = 'video'
+
+
+class Attachment(File):
+    type: AttachmentType
+    width: int | None = None
+    height: int | None = None
+    filename: Annotated[str | None, Field(alias='filename')] = None
+    mime_type: Annotated[str | None, Field(alias='mimeType')] = None
+    size: int | None = None
+    duration: int | None = None
+    order: int | None = None
+
+
+__all__ = ['File', 'GetFile', 'AttachmentType', 'Attachment']

@@ -164,5 +164,7 @@ async def read_all_notifications(
     return data["success"]
 
 
-__all__ = [NotificationsResponse, get_notifications, read_batch_notifications, read_notification,
-           read_all_notifications, get_notifications_count]
+__all__ = [
+    'NotificationsResponse', 'get_notifications', 'read_batch_notifications', 'read_notification',
+    'read_all_notifications', 'get_notifications_count'
+]

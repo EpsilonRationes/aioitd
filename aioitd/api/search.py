@@ -45,4 +45,4 @@ async def search(
     return hashtags, users
 
 
-__all__ = [search]
+__all__ = ['search']

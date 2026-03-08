@@ -38,4 +38,4 @@ class Notification(ITDBaseModel):
     type: NotificationType
 
 
-__all__ = [NotificationType, Actor, Notification]
+__all__ = ['NotificationType', 'Actor', 'Notification']

@@ -12,4 +12,4 @@ class Hashtag(ITDBaseModel):
     posts_count: Annotated[int, Field(alias="postsCount")]
 
 
-__all__ = [Hashtag]
+__all__ = ['Hashtag']

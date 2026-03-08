@@ -22,4 +22,4 @@ class NotificationEvent(Notification):
     sound: bool
 
 
-__all__ = [SSEEvent, ConnectedEvent, NotificationEvent]
+__all__ = ['SSEEvent', 'ConnectedEvent', 'NotificationEvent']

@@ -81,4 +81,4 @@ async def report(
     return Report(**data)
 
 
-__all__ = [Reason, report, ReportTargetType]
+__all__ = ['Reason', 'report', 'ReportTargetType']

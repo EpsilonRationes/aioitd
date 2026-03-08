@@ -60,4 +60,4 @@ async def connect_notifications(
         yield _sse_wrapper(event_source.aiter_sse)
 
 
-__all__ = [connect_notifications]
+__all__ = ['connect_notifications']

@@ -4,7 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from aioitd.models.base import ITDDatetime, ITDBaseModel, Attachment
+from aioitd.models.base import ITDDatetime, ITDBaseModel
+from aioitd.models.files import Attachment
 from aioitd.models.users import UserWithPin, UserWithAvatar
 
 
@@ -127,5 +128,7 @@ class Post(BasePost):
     wall_recipient: Annotated[None | UserWithAvatar, Field(alias="wallRecipient")]  # везде кроме лайков норм
 
 
-__all__ = [Option, Poll, UpdatePostResponse, Post, OriginalPost, Span, BaseSpan, Mention, HashTagSpan, Monospace,
-           Strike, Underline, Bold, Italic, Spoiler, Link, BasePost]
+__all__ = [
+    'Option', 'Poll', 'UpdatePostResponse', 'Post', 'OriginalPost', 'Span', 'BaseSpan', 'Mention', 'HashTagSpan',
+    'Monospace', 'Strike', 'Underline', 'Bold', 'Italic', 'Spoiler', 'Link', 'BasePost'
+]

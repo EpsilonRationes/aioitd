@@ -148,4 +148,4 @@ async def patch(
     return await request(client.patch, url, json=json, params=params, headers=headers, **kwargs)
 
 
-__all__ = [delete, put, patch, post, get, request, add_bearer, is_token_expired, decode_jwt_payload]
+__all__ = ['delete', 'put', 'patch', 'post', 'get', 'request', 'add_bearer', 'is_token_expired', 'decode_jwt_payload']

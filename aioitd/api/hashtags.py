@@ -111,4 +111,4 @@ async def get_posts_by_hashtag(
     return hashtag, pagination, posts
 
 
-__all__ = [search_hashtags, get_trending_hashtags, get_posts_by_hashtag]
+__all__ = ['search_hashtags', 'get_trending_hashtags', 'get_posts_by_hashtag']

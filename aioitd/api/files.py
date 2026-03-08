@@ -107,4 +107,4 @@ async def delete_file(
     )
 
 
-__all__ = [get_file, upload_file, delete_file]
+__all__ = ["get_file", "upload_file", "delete_file"]

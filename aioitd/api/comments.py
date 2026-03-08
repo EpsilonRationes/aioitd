@@ -15,7 +15,7 @@ async def comment(
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> Comment:
-    """
+    """Создать комментарий.
     
     Args:
         client: httpx.AsyncClient
@@ -25,6 +25,9 @@ async def comment(
         attachment_ids: список UUID файлов
         domain: домен
 
+    Returns:
+        Созданный комментарий
+
     Raises:
         UnauthorizedError: ошибка авторизации
         NotFoundError: пост не найден
@@ -33,6 +36,22 @@ async def comment(
         ParamsValidationError: len(attachments_ids) <= 4
         ITDError: не должно быть одинаковых attachment_ids[i]
         ParamsValidationError: len(content) <= 1_000
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, get_posts, comment, upload_file
+
+        refresh_token = "ВАШ ТОКЕН"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                _, posts = await get_posts(client, access_token)
+                with open('tests/image.jpg', 'rb') as f:
+                    image = await upload_file(client, access_token, f)
+                await comment(client, access_token, posts[0].id, "Это комментарий", [image.id])
+        ```
     """
     if attachment_ids is None:
         attachment_ids = []
@@ -70,6 +89,9 @@ async def replies(
         attachment_ids: список UUID файлов
         domain: домен
 
+    Returns:
+        Созданный ответ
+
     Raises:
         UnauthorizedError: ошибка авторизации
         NotFoundError: комментарий не найден
@@ -77,6 +99,23 @@ async def replies(
         ITDError: attachments_ids[i] файла с таким UUID не существует
         ParamsValidationError: len(attachments_ids) <= 4
         ParamsValidationError: len(content) <= 1_000
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, get_posts, comment, upload_file, replies
+
+        refresh_token = "ВАШ ТОКЕН"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                _, posts = await get_posts(client, access_token)
+                with open('tests/image.jpg', 'rb') as f:
+                    image = await upload_file(client, access_token, f)
+                comm = await comment(client, access_token, posts[0].id, "Это комментарий")
+                await replies(client, access_token, comm.id, 'Это ответ', attachment_ids=[image.id])
+        ```
     """
     if attachment_ids is None:
         attachment_ids = []
@@ -110,11 +149,29 @@ async def edit_comment(
         content: текст комментария
         domain: домен
 
+    Returns:
+        Новое содержимое комментария
+
     Raises:
         UnauthorizedError: ошибка авторизации
         NotFoundError: комментарий не найден
         ForbiddenError: нет прав на редактирование этого комментария
         ParamsValidationError: 1 <= len(content) <= 1_000
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, get_posts, comment, edit_comment
+
+        refresh_token = "ВАШ ТОКЕН"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                _, posts = await get_posts(client, access_token)
+                comm = await comment(client, access_token, posts[0].id, "Это комментарий")
+                await edit_comment(client, access_token, comm.id, 'Изменённый комментарий')
+        ```
     """
 
     response = await patch(
@@ -147,6 +204,21 @@ async def delete_comment(
         UnauthorizedError: ошибка авторизации
         NotFoundError: комментарий не найден
         ForbiddenError: нет прав на удаление комментария
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, get_posts, comment, delete_comment
+
+        refresh_token = "ВАШ ТОКЕН"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                _, posts = await get_posts(client, access_token)
+                comm = await comment(client, access_token, posts[0].id, "Это комментарий")
+                await delete_comment(client, access_token, comm.id)
+        ```
     """
     await delete(
         client,
@@ -176,6 +248,22 @@ async def restore_comment(
         UnauthorizedError: ошибка авторизации
         NotFoundError: комментарий не найден
         ForbiddenError: нет прав на восстановление комментария
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, get_posts, comment, delete_comment, restore_comment
+
+        refresh_token = "101c68cc5142de4737f3112fb8236715595e6f9ce0ea19ababb219210f526373"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                _, posts = await get_posts(client, access_token)
+                comm = await comment(client, access_token, posts[0].id, "Это комментарий")
+                await delete_comment(client, access_token, comm.id)
+                await restore_comment(client, access_token, comm.id)
+        ```
     """
     await post(
         client,
@@ -191,7 +279,7 @@ async def like_comment(
         comment_id: UUID,
         domain: str = "xn--d1ah4a.com",
         **kwargs
-) -> str:
+) -> int:
     """Поставить лайк на комментарий.
     
     Args:
@@ -200,9 +288,27 @@ async def like_comment(
         comment_id: UUID комментария
         domain: домен
 
+    Returns:
+        Лайков на комментарии
+
     Raises:
         UnauthorizedError: ошибка авторизации
         NotFoundError: комментарий не найден
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, get_posts_by_user, like_comment, get_post_comments
+
+        refresh_token = "101c68cc5142de4737f3112fb8236715595e6f9ce0ea19ababb219210f526373"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                _, posts = await get_posts_by_user(client, access_token, 'nowkie')
+                _, comments = await get_post_comments(client, access_token, posts[0].id)
+                await like_comment(client, access_token, comments[0].id)
+        ```
     """
     response = await post(
         client,
@@ -220,7 +326,7 @@ async def delete_like_comment(
         comment_id: UUID,
         domain: str = "xn--d1ah4a.com",
         **kwargs
-) -> str:
+) -> int:
     """Удалить лайк с комментария.
     
     Args:
@@ -229,9 +335,28 @@ async def delete_like_comment(
         comment_id: UUID комментария
         domain: домен
 
+    Returns:
+        Лайков на комментарии
+
     Raises:
         UnauthorizedError: ошибка авторизации
         NotFoundError: комментарий не найден
+
+    Examples:
+        ```python
+        from httpx import AsyncClient
+        from aioitd.api import refresh, get_posts_by_user, like_comment, get_post_comments, delete_like_comment
+
+        refresh_token = "ВАШ ТОКЕН"
+
+        async def main():
+            async with AsyncClient() as client:
+                access_token = await refresh(client, refresh_token)
+                _, posts = await get_posts_by_user(client, access_token, 'nowkie')
+                _, comments = await get_post_comments(client, access_token, posts[0].id)
+                await like_comment(client, access_token, comments[0].id)
+                await delete_like_comment(client, access_token, comments[0].id)
+        ```
     """
     response = await delete(
         client,
@@ -243,4 +368,6 @@ async def delete_like_comment(
     return data["likesCount"]
 
 
-__all__ = [delete_comment, like_comment, delete_like_comment, comment, edit_comment, replies, restore_comment]
+__all__ = [
+    "delete_comment", "like_comment", "delete_like_comment", "comment", "edit_comment", "replies", "restore_comment"
+]

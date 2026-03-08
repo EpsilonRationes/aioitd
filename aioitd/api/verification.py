@@ -60,4 +60,4 @@ async def submit_verification(
     return data
 
 
-__all__ = [get_verification_status, submit_verification]
+__all__ = ['get_verification_status', 'submit_verification']
