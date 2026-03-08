@@ -72,7 +72,7 @@ async def upload_file(
     response = await post(
         client,
         f"https://{domain}/api/files/upload",
-        files={'file': file}, timeout=1000,
+        files={'file': file},
         headers={"authorization": add_bearer(access_token)},
         **kwargs
     )
