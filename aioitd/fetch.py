@@ -1,7 +1,6 @@
 import base64
 import json
 import time
-import asyncio
 from json import JSONDecodeError
 from typing import Callable, Coroutine, Any
 
@@ -9,31 +8,6 @@ import httpx
 
 from aioitd import ITDError, itd_codes, RateLimitError, ParamsValidationError, GatewayTimeOutError, \
     NotAllowedError, TooLargeError, NotFoundError, UnauthorizedError
-
-
-class FetchInterval:
-    """Рассчитывает задержку между запросами
-
-    Attributes:
-        time_delta: минимальная задержка между запросами
-    """
-
-    def __init__(self, time_delta: float | int = 0.105):
-        self.time_delta = time_delta
-        self.last_fetch = 0
-        self.start = time.time()
-
-    async def __call__(self):
-        await self.interval()
-
-    async def interval(self):
-        t = time.time()
-        last_fetch = self.last_fetch
-        if t - last_fetch < self.time_delta:
-            self.last_fetch = last_fetch + self.time_delta
-            await asyncio.sleep(self.time_delta - t + last_fetch)
-        if time.time() > self.last_fetch:
-            self.last_fetch = time.time()
 
 
 def decode_jwt_payload(jwt_token: str) -> dict[str, Any]:
@@ -159,4 +133,4 @@ async def patch(
     return await request(client.patch, url, json=json, params=params, headers=headers, **kwargs)
 
 
-__all__ = [delete, put, patch, post, get, request, add_bearer, is_token_expired, decode_jwt_payload, FetchInterval]
+__all__ = [delete, put, patch, post, get, request, add_bearer, is_token_expired, decode_jwt_payload]
