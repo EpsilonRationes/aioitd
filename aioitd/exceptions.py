@@ -68,10 +68,6 @@ class UnknowError(ITDError):
     code = "UNKNOWN_ERROR"
 
 
-class Error429(ITDError):
-    code = "Too Many Requests"
-
-
 class RateLimitError(ITDError):
     code = "RATE_LIMIT_EXCEEDED"
 

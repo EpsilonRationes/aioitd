@@ -7,7 +7,7 @@ from typing import Callable, Coroutine, Any
 
 import httpx
 
-from aioitd import ITDError, itd_codes, RateLimitError, Error429, ParamsValidationError, GatewayTimeOutError, \
+from aioitd import ITDError, itd_codes, RateLimitError, ParamsValidationError, GatewayTimeOutError, \
     NotAllowedError, TooLargeError, NotFoundError, UnauthorizedError
 
 
@@ -84,7 +84,7 @@ async def request(
             if 'retry_after' in data:
                 raise RateLimitError(RateLimitError.code, data['error'], retry_after=data["retry_after"])
             if data['error'] == 'Too Many Requests':
-                raise Error429(data['error'], data['message'])
+                raise RateLimitError(RateLimitError.code, data['error'], retry_after=-1)
             error = data['error']
             if error['code'] == "RATE_LIMIT_EXCEEDED":
                 raise RateLimitError(code=error['code'], message=error["message"], retry_after=error["retryAfter"])
