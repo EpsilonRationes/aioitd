@@ -27,7 +27,7 @@ class Comment(ITDBaseModel):
 
 
 class Reply(Comment):
-    reply_to: Annotated[UserStab, Field(alias="replyTo")]
+    reply_to: Annotated[UserStab | None, Field(alias="replyTo")]
 
 
 __all__ = ['UpdateCommentResponse', 'Comment', 'Reply']

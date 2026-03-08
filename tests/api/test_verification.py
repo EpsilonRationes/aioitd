@@ -7,7 +7,7 @@ from aioitd.api.verification import get_verification_status
 
 
 @pytest.mark.asyncio
-async def test_files(client, access_token):
+async def test_get_verification_status(client, access_token):
     with pytest.raises(UnauthorizedError):
         await get_verification_status(client, '123')
 

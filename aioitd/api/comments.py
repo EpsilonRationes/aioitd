@@ -129,6 +129,8 @@ async def replies(
         **kwargs
     )
     data = response.json()
+    data['repliesCount'] = 0
+    data['replies'] = []
     return Reply(**data)
 
 

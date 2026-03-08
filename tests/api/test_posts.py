@@ -3,11 +3,10 @@ import asyncio
 import pytest
 from uuid import uuid8, UUID
 
-from PIL.ImageChops import offset
-
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError, \
-    NotPinedError, UserBlockedError, VideoRequiresVerificationError, WallClosedError
-from aioitd.models.base import Link, Monospace, Strike, Underline, Bold, Italic, Spoiler, Mention, HashTagSpan
+    NotPinedError, UserBlockedError, VideoRequiresVerificationError, WallClosedError, Link, Monospace, Strike, \
+    Underline, Bold, Italic, Spoiler, Mention, HashTagSpan
+
 from tests.api import client, access_token
 
 from aioitd.api.posts import get_post, delete_post, restore_post, create_post, like_post, delete_like_post, pin_post, \
@@ -217,7 +216,6 @@ async def test_get_posts(client, access_token):
     with pytest.raises(ParamsValidationError):
         await get_posts(client, access_token, limit=51)
 
-
     for tab in ['popular', 'following', 'clan']:
         cursor = None
         for _ in range(10):
@@ -225,7 +223,6 @@ async def test_get_posts(client, access_token):
             cursor = pagination.next_cursor
             if cursor is None:
                 break
-
 
 
 @pytest.mark.asyncio
@@ -296,6 +293,7 @@ async def test_repost(client, access_token):
     post = await repost(client, access_token, posts[0].id)
     await delete_post(client, access_token, post.id)
 
+
 @pytest.mark.asyncio
 async def test_create_post(client, access_token):
     with pytest.raises(UnauthorizedError):
@@ -304,19 +302,19 @@ async def test_create_post(client, access_token):
     with pytest.raises(ValidationError):
         await create_post(client, access_token)
 
-    post = await create_post(client, access_token, '1'*1000)
+    post = await create_post(client, access_token, '1' * 1000)
     await delete_post(client, access_token, post.id)
     with pytest.raises(ParamsValidationError):
-        await create_post(client, access_token, '1'*1001)
-
+        await create_post(client, access_token, '1' * 1001)
+    await asyncio.sleep(30)
     with pytest.raises(VideoRequiresVerificationError):
         await create_post(client, access_token, attachment_ids=[video_id])
 
     with pytest.raises(VideoRequiresVerificationError):
-        await create_post(client, access_token, attachment_ids=[video_id]*10)
+        await create_post(client, access_token, attachment_ids=[video_id] * 10)
 
     with pytest.raises(ValidationError):
-        await create_post(client, access_token, attachment_ids=[video_id]*11)
+        await create_post(client, access_token, attachment_ids=[video_id] * 11)
 
     with pytest.raises(ForbiddenError):
         await create_post(client, access_token, attachment_ids=[uuid8()])
@@ -346,37 +344,37 @@ async def test_create_post(client, access_token):
         )
 
     with pytest.raises(ParamsValidationError):
-        await create_post(client, access_token, 'spand test', spans=[Monospace(offset=0, length=5)]*101)
+        await create_post(client, access_token, 'spand test', spans=[Monospace(offset=0, length=5)] * 101)
 
     with pytest.raises(ParamsValidationError):
         await create_post(client, access_token, attachment_ids=[uuid8()], question='', options=['1', '2'])
 
     with pytest.raises(ForbiddenError):
-         await create_post(client, access_token, attachment_ids=[uuid8()], question='1'*128, options=['1', '2'])
+        await create_post(client, access_token, attachment_ids=[uuid8()], question='1' * 128, options=['1', '2'])
 
     with pytest.raises(ParamsValidationError):
-        await create_post(client, access_token, attachment_ids=[uuid8()], question='1'*129, options=['1', '2'])
+        await create_post(client, access_token, attachment_ids=[uuid8()], question='1' * 129, options=['1', '2'])
 
     with pytest.raises(ParamsValidationError):
         await create_post(client, access_token, attachment_ids=[uuid8()], question='1', options=['1'])
 
     with pytest.raises(ForbiddenError):
-         await create_post(client, access_token, attachment_ids=[uuid8()], question='1', options=['1', '2'])
+        await create_post(client, access_token, attachment_ids=[uuid8()], question='1', options=['1', '2'])
 
     with pytest.raises(ForbiddenError):
-         await create_post(client, access_token, attachment_ids=[uuid8()], question='1', options=['1']*10)
+        await create_post(client, access_token, attachment_ids=[uuid8()], question='1', options=['1'] * 10)
 
     with pytest.raises(ParamsValidationError):
-        await create_post(client, access_token, attachment_ids=[uuid8()], question='1', options=['1']*11)
+        await create_post(client, access_token, attachment_ids=[uuid8()], question='1', options=['1'] * 11)
 
     with pytest.raises(ParamsValidationError):
         await create_post(client, access_token, attachment_ids=[uuid8()], question='', options=['', '2'])
 
     with pytest.raises(ForbiddenError):
-         await create_post(client, access_token, attachment_ids=[uuid8()], question='1'*128, options=['1'*32, '2'])
+        await create_post(client, access_token, attachment_ids=[uuid8()], question='1' * 128, options=['1' * 32, '2'])
 
     with pytest.raises(ParamsValidationError):
-        await create_post(client, access_token, attachment_ids=[uuid8()], question='1'*129, options=['1'*33, '2'])
+        await create_post(client, access_token, attachment_ids=[uuid8()], question='1' * 129, options=['1' * 33, '2'])
 
     with pytest.raises(WallClosedError):
         await create_post(client, access_token, '1', wall_recipient_id=UUID("5ee59a22-ae5a-49f9-9090-5a72e6285fad"))
