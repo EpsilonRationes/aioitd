@@ -11,7 +11,14 @@ from aioitd import ITDError, itd_codes, RateLimitError, ParamsValidationError, G
 
 
 def decode_jwt_payload(jwt_token: str) -> dict[str, Any]:
-    """Декодирует pyload jwt"""
+    """Декодирует pyload jwt.
+
+    Args:
+        jwt_token: jwt токен
+
+    Returns:
+        jwt payload
+    """
     payload = jwt_token.split('.')[1]
     payload += '=' * ((4 - len(payload) % 4) % 4)
     decoded = base64.urlsafe_b64decode(payload).decode('utf-8')
@@ -19,7 +26,15 @@ def decode_jwt_payload(jwt_token: str) -> dict[str, Any]:
 
 
 def is_token_expired(access_token: str) -> bool:
-    """Истёк ли `access_token`."""
+    """Истёк ли `access_token`.
+
+    Args:
+        access_token: access токен
+
+    Returns:
+         Истёк ли токен
+
+    """
     payload = decode_jwt_payload(access_token)
     return time.time() - 1 >= payload['exp']
 
