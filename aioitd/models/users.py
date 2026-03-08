@@ -26,7 +26,8 @@ class Privacy(ITDBaseModel):
 class Profile(ITDBaseModel):
     authenticated: bool
     banned: bool
-    user: UserWithRoles
+    user: UserWithRoles | None
+    """None если отправить запрос без access_token"""
 
 
 class LastSeenUnit(str, Enum):
