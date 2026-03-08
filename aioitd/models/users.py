@@ -29,8 +29,18 @@ class Profile(ITDBaseModel):
     user: UserWithRoles
 
 
+class LastSeenUnit(str, Enum):
+    JUST_NOW = 'just_now'
+    MINUTES = 'minutes'
+    HOURS = 'hours'
+    RECENTLY = 'recently'
+    THIS_WEEK = 'this_week'
+    THIS_MONTH = 'this_month'
+    LONG_AGO = 'long_ago'
+
+
 class LastSeen(ITDBaseModel):
-    unit: str
+    unit: LastSeenUnit
     value: int | None = None
 
 
@@ -145,4 +155,5 @@ class PrivateUser(LastSeenMixin):
 
 __all__ = [BaseFullUser, BlockedAuthor, Clan, FullMe, FullUser, LastSeen, LastSeenMixin, Me, Pin, PinSlug, PinWithDate,
            Privacy, PrivateUser, Profile, User, UserBlockedByMe, UserBlockMe, UserStab, UserWithAvatar,
-           UserWithFollowersCount, UserWithFollowing, UserWithPin, UserWithRoles, UserWithVerified, Visibility]
+           UserWithFollowersCount, UserWithFollowing, UserWithPin, UserWithRoles, UserWithVerified, Visibility,
+           LastSeenUnit]
