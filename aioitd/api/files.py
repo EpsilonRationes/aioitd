@@ -12,7 +12,8 @@ async def get_file(
         client: httpx.AsyncClient,
         access_token: str,
         file_id: UUID | str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> GetFile:
     """Получить файл.
     
@@ -34,7 +35,8 @@ async def get_file(
     response = await get(
         client,
         f"https://{domain}/api/files/{file_id}",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return GetFile(**data)
@@ -44,7 +46,8 @@ async def upload_file(
         client: httpx.AsyncClient,
         access_token: str,
         file: IO[bytes],
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> File:
     """Загрузить файл.
 
@@ -70,7 +73,8 @@ async def upload_file(
         client,
         f"https://{domain}/api/files/upload",
         files={'file': file}, timeout=1000,
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return File(**data)
@@ -80,7 +84,8 @@ async def delete_file(
         client: httpx.AsyncClient,
         access_token: str,
         file_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Удалить файл.
 
@@ -97,7 +102,8 @@ async def delete_file(
     await delete(
         client,
         f"https://{domain}/api/files/{file_id}",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 

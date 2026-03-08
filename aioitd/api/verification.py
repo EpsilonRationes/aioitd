@@ -6,7 +6,8 @@ from aioitd.fetch import add_bearer, get, post
 async def get_verification_status(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> str:
     """Получить статус верификации
     
@@ -22,7 +23,8 @@ async def get_verification_status(
     response = await get(
         client,
         f"https://{domain}/api/verification/status",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["status"]
@@ -32,7 +34,8 @@ async def submit_verification(
         client: httpx.AsyncClient,
         access_token: str,
         video_url: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> dict:
     """Подать запрос на галочку
     
@@ -50,7 +53,8 @@ async def submit_verification(
         client,
         f"https://{domain}/api/verification/submit",
         json={"videoUrl": video_url},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data

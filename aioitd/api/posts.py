@@ -14,7 +14,8 @@ async def get_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[list[Comment], Post]:
     """Получить пост.
     
@@ -33,7 +34,8 @@ async def get_post(
     response = await get(
         client,
         f"https://{domain}/api/posts/{post_id}",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()['data']
     comments = list(map(Comment.model_validate, data['comments']))
@@ -46,7 +48,8 @@ async def delete_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Удалить пост.
     
@@ -65,7 +68,8 @@ async def delete_post(
     await delete(
         client,
         f"https://{domain}/api/posts/{post_id}",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
@@ -73,7 +77,8 @@ async def restore_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Восстановить пост.
     
@@ -91,7 +96,8 @@ async def restore_post(
     await post(
         client,
         f"https://{domain}/api/posts/{post_id}/restore",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
@@ -99,7 +105,8 @@ async def like_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> int:
     """Лайкнуть пост.
     
@@ -117,7 +124,8 @@ async def like_post(
     response = await post(
         client,
         f"https://{domain}/api/posts/{post_id}/like",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
 
@@ -128,7 +136,8 @@ async def delete_like_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> int:
     """Убрать лайк с пост.
     
@@ -146,7 +155,8 @@ async def delete_like_post(
     response = await delete(
         client,
         f"https://{domain}/api/posts/{post_id}/like",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
 
@@ -157,7 +167,8 @@ async def view_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Просмотр на пост.
     
@@ -169,13 +180,12 @@ async def view_post(
 
     Raises:
         UnauthorizedError: ошибка авторизации
-
-
     """
     await post(
         client,
         f"https://{domain}/api/posts/{post_id}/view",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
@@ -183,7 +193,8 @@ async def pin_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID | str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> bool:
     """Закрепить пост.
     
@@ -202,7 +213,8 @@ async def pin_post(
     response = await post(
         client,
         f"https://{domain}/api/posts/{post_id}/pin",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["success"]
@@ -212,7 +224,8 @@ async def unpin_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> bool:
     """Открепить пост.
     
@@ -230,7 +243,8 @@ async def unpin_post(
     response = await delete(
         client,
         f"https://{domain}/api/posts/{post_id}/pin",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["success"]
@@ -243,7 +257,8 @@ async def get_posts_by_user(
         cursor: str | None = None,
         limit: int = 20,
         sort: Literal["new", "popular"] = "new",
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[Pagination, list[Post]]:
     """Посты на стене пользователя.
     
@@ -269,7 +284,8 @@ async def get_posts_by_user(
         f"https://{domain}/api/posts/user/{username_or_id}",
         params={"sort": sort, "limit": limit} | (
             {} if cursor is None else {"cursor": cursor}),
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     pagination = Pagination(**data["pagination"])
@@ -284,7 +300,8 @@ async def get_posts_by_user_liked(
         username_or_id: str | UUID,
         cursor: str | None = None,
         limit: int = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[Pagination, list[Post]]:
     """Посты на которые пользователей поставил лайк.
     
@@ -307,7 +324,8 @@ async def get_posts_by_user_liked(
         f"https://{domain}/api/posts/user/{username_or_id}/liked/",
         params={"sort": "new", "limit": limit} | (
             {} if cursor is None else {"cursor": cursor}),
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     pagination = Pagination(**data["pagination"])
@@ -325,7 +343,8 @@ async def get_posts_by_user_wall(
         username_or_id: str | UUID,
         cursor: None = None,
         limit: int = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[Pagination, list[Post]]:
     """Посты на стене пользователя, сделанные не пользователем.
     
@@ -348,7 +367,8 @@ async def get_posts_by_user_wall(
         f"https://{domain}/api/posts/user/{username_or_id}/wall",
         params={"sort": "new", "limit": limit} | (
             {} if cursor is None else {"cursor": cursor}),
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     pagination = Pagination(**data["pagination"])
@@ -363,7 +383,8 @@ async def get_posts(
         cursor: None = None,
         limit: int = 20,
         tab: Literal['popular', 'following', 'clan'] = 'popular',
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[Pagination, list[Post]]:
     """Лента.
 
@@ -384,7 +405,8 @@ async def get_posts(
         f"https://{domain}/api/posts?limit=20&tab=popular",
         params={"tab": tab, "limit": limit} | (
             {} if cursor is None else {"cursor": cursor}),
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     pagination = Pagination(**data["pagination"])
@@ -407,7 +429,8 @@ async def get_post_comments(
         cursor: str | None = None,
         sort: Literal["popular", "newest", "oldest"] = "popular",
         limit: int = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[TotalPagination, list[Comment]]:
     """Получить комментарии под постом.
     
@@ -429,7 +452,8 @@ async def get_post_comments(
         client,
         f"https://{domain}/api/posts/{post_id}/comments",
         params={"sort": sort, "limit": limit} | ({} if cursor is None else {"cursor": cursor}),
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     pagination = TotalPagination(total=data["total"], nextCursor=data["nextCursor"], hasMore=data["hasMore"])
@@ -443,7 +467,8 @@ async def vote(
         access_token: str,
         post_id: UUID,
         options_ids: list[UUID],
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Poll:
     """Проголосовать в опросе
 
@@ -466,7 +491,8 @@ async def vote(
         client,
         f"https://{domain}/api/posts/{post_id}/poll/vote",
         json={"optionIds": list(map(str, options_ids))},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
 
@@ -483,7 +509,8 @@ async def create_post(
         question: str | None = None,
         options: list[str] | None = None,
         spans: list[Monospace | Strike | Underline | Bold | Italic | Spoiler | Link] = None,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Post:
     """Создать пост.
     
@@ -541,7 +568,8 @@ async def create_post(
         client,
         f"https://{domain}/api/posts",
         json=json,
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
 
@@ -559,7 +587,8 @@ async def update_post(
         access_token: str,
         post_id: UUID,
         content: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> UpdatePostResponse:
     """Изменить пост
     
@@ -581,7 +610,8 @@ async def update_post(
         client,
         f"https://{domain}/api/posts/{post_id}",
         json={"content": content},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
 
@@ -593,7 +623,8 @@ async def repost(
         access_token: str,
         post_id: UUID | str,
         content: str = "",
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Post:
     """Репост.
 
@@ -615,7 +646,8 @@ async def repost(
         client,
         f"https://{domain}/api/posts/{post_id}/repost",
         json={"content": content},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     data['author']['id'] = decode_jwt_payload(access_token)['sub']

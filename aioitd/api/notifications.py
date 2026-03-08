@@ -17,7 +17,8 @@ async def get_notifications(
         access_token: str,
         offset: int = 0,
         limit: int = 30,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> NotificationsResponse:
     """Получить уведомления.
     
@@ -36,7 +37,8 @@ async def get_notifications(
         client,
         f"https://{domain}/api/notifications/",
         params={"limit": limit, "offset": offset},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return NotificationsResponse(
@@ -49,7 +51,8 @@ async def read_batch_notifications(
         client: httpx.AsyncClient,
         access_token: str,
         notifications_ids: list[UUID],
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> int:
     """Пометить прочитанными несколько уведомлений.
     
@@ -69,7 +72,8 @@ async def read_batch_notifications(
         client,
         f"https://{domain}/api/notifications/read-batch",
         json={"ids": list(map(str, notifications_ids))},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["count"]
@@ -79,7 +83,8 @@ async def read_notification(
         client: httpx.AsyncClient,
         access_token: str,
         notification_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> bool:
     """Пометить сообщение прочитанным.
     
@@ -96,7 +101,8 @@ async def read_notification(
     response = await post(
         client,
         f"https://{domain}/api/notifications/{notification_id}/read",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["success"]
@@ -105,7 +111,8 @@ async def read_notification(
 async def get_notifications_count(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> int:
     """Получить количество непрочитанных уведомлений.
     
@@ -122,7 +129,8 @@ async def get_notifications_count(
     response = await get(
         client,
         f"https://{domain}/api/notifications/count",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["count"]
@@ -131,7 +139,8 @@ async def get_notifications_count(
 async def read_all_notifications(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> bool:
     """Пометить все уведомления прочитанными.
     
@@ -148,7 +157,8 @@ async def read_all_notifications(
     response = await post(
         client,
         f"https://{domain}/api/notifications/read-all",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["success"]

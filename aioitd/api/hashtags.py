@@ -12,7 +12,8 @@ async def search_hashtags(
         client: httpx.AsyncClient,
         query: str,
         limit: int = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> list[Hashtag]:
     """Поиск хештегов.
 
@@ -26,7 +27,7 @@ async def search_hashtags(
         ParamsValidationError: 1 <= limit <= 100
         ParamsValidationError: len(query) <= 100
     """
-    response = await get(client, f"https://{domain}/api/hashtags", params={"q": query, "limit": limit})
+    response = await get(client, f"https://{domain}/api/hashtags", params={"q": query, "limit": limit}, **kwargs)
     data = response.json()["data"]
     return list(map(Hashtag.model_validate, data["hashtags"]))
 
@@ -34,7 +35,8 @@ async def search_hashtags(
 async def get_trending_hashtags(
         client: httpx.AsyncClient,
         limit: int = 10,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> list[Hashtag]:
     """Получить популярные хештеги.
 
@@ -46,7 +48,7 @@ async def get_trending_hashtags(
     Raises:
         ParamsValidationError: 1 <= limit <= 50
     """
-    response = await get(client, f"https://{domain}/api/hashtags/trending", params={"limit": limit})
+    response = await get(client, f"https://{domain}/api/hashtags/trending", params={"limit": limit}, **kwargs)
     data = response.json()["data"]
     return list(map(Hashtag.model_validate, data["hashtags"]))
 
@@ -56,7 +58,8 @@ async def get_posts_by_hashtag(
         hashtag_name: str,
         cursor: str | None = None,
         limit: int = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[Hashtag, Pagination, list[tuple[list[Comment], Post]]]:
     """Посты по хештегу.
 
@@ -80,6 +83,7 @@ async def get_posts_by_hashtag(
             client,
             f"https://{domain}/api/hashtags/{hashtag_name}/posts",
             params=params,
+            **kwargs
         )
     except NotFoundError:
         raise NotFoundError("NOT_FOUND", f"Хештег '{hashtag_name}' не найден")

@@ -50,7 +50,8 @@ async def report(
         target_type: ReportTargetType = ReportTargetType.USER,
         reason: Reason = Reason.OTHER,
         description: str = "",
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Report:
     """Пожаловаться
     
@@ -73,7 +74,8 @@ async def report(
         client,
         f"https://{domain}/api/reports",
         json={"targetId": str(target_id), "targetType": target_type, "reason": reason, "description": description},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()['data']
     return Report(**data)

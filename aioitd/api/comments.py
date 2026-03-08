@@ -12,7 +12,8 @@ async def comment(
         post_id: UUID,
         content: str = "",
         attachment_ids: list[UUID] | None = None,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Comment:
     """
     
@@ -40,7 +41,8 @@ async def comment(
         client,
         f"https://{domain}/api/posts/{post_id}/comments",
         json={"content": content, "attachmentIds": list(map(str, attachment_ids))},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     data['replies'] = []
@@ -54,7 +56,8 @@ async def replies(
         content: str = "",
         replay_to_user_id: UUID = None,
         attachment_ids: list[UUID] = None,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Reply:
     """Ответить на комментарий
 
@@ -83,7 +86,8 @@ async def replies(
         f"https://{domain}/api/comments/{comment_id}/replies",
         json={"content": content, "attachmentIds": list(map(str, attachment_ids))}
              | ({} if replay_to_user_id is None else {"replayToUserId": str(replay_to_user_id)}),
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return Reply(**data)
@@ -94,7 +98,8 @@ async def edit_comment(
         access_token: str,
         comment_id: UUID,
         content: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> UpdateCommentResponse:
     """Ответить на комментарий.
 
@@ -116,7 +121,8 @@ async def edit_comment(
         client,
         f"https://{domain}/api/comments/{comment_id}",
         json={"content": content},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return UpdateCommentResponse(**data)
@@ -126,7 +132,8 @@ async def delete_comment(
         client: httpx.AsyncClient,
         access_token: str,
         comment_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Удалить комментарий.
     
@@ -144,7 +151,8 @@ async def delete_comment(
     await delete(
         client,
         f"https://{domain}/api/comments/{comment_id}",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
@@ -152,7 +160,8 @@ async def restore_comment(
         client: httpx.AsyncClient,
         access_token: str,
         comment_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Восстановить комментарий.
 
@@ -171,7 +180,8 @@ async def restore_comment(
     await post(
         client,
         f"https://{domain}/api/comments/{comment_id}/restore",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
@@ -179,7 +189,8 @@ async def like_comment(
         client: httpx.AsyncClient,
         access_token: str,
         comment_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> str:
     """Поставить лайк на комментарий.
     
@@ -196,7 +207,8 @@ async def like_comment(
     response = await post(
         client,
         f"https://{domain}/api/comments/{comment_id}/like",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["likesCount"]
@@ -206,7 +218,8 @@ async def delete_like_comment(
         client: httpx.AsyncClient,
         access_token: str,
         comment_id: UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> str:
     """Удалить лайк с комментария.
     
@@ -223,7 +236,8 @@ async def delete_like_comment(
     response = await delete(
         client,
         f"https://{domain}/api/comments/{comment_id}/like",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return data["likesCount"]

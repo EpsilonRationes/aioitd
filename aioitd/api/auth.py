@@ -6,7 +6,8 @@ from aioitd.fetch import add_bearer, post
 async def refresh(
         client: httpx.AsyncClient,
         refresh_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> str:
     """Получить access_token.
 
@@ -26,7 +27,8 @@ async def refresh(
     response = await post(
         client,
         f"https://{domain}/api/v1/auth/refresh",
-        cookies={"refresh_token": refresh_token}
+        cookies={"refresh_token": refresh_token},
+        **kwargs
     )
     return response.json()["accessToken"]
 
@@ -34,7 +36,8 @@ async def refresh(
 async def logout(
         client: httpx.AsyncClient,
         refresh_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Выйти из аккаунта, отозвать токен. Работает при любом токене. Просроченном, не существующем и пустой строкой тоже.
 
@@ -46,7 +49,8 @@ async def logout(
     await post(
         client,
         f"https://{domain}/api/v1/auth/logout",
-        cookies={"refresh_token": refresh_token}
+        cookies={"refresh_token": refresh_token},
+        **kwargs
     )
 
 
@@ -55,7 +59,8 @@ async def change_password(
         access_token: str,
         old_password: str,
         new_password: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Поменять пароль. При успешной смене пароля `refresh_token` отзывается.
 
@@ -77,7 +82,8 @@ async def change_password(
         client,
         f"https://{domain}/api/v1/auth/change-password",
         json={"oldPassword": old_password, "newPassword": new_password},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 

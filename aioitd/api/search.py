@@ -12,7 +12,8 @@ async def search(
         query: str,
         user_limit: int | None = 20,
         hashtag_limit: int | None = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[list[Hashtag], list[UserWithFollowersCount]]:
     """Поиск
 
@@ -35,7 +36,8 @@ async def search(
     response = await get(
         client,
         f"https://{domain}/api/search/",
-        params
+        params,
+        **kwargs
     )
     data = response.json()["data"]
     hashtags = list(map(Hashtag.model_validate, data["hashtags"]))

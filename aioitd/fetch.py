@@ -105,9 +105,10 @@ async def get(
         client: httpx.AsyncClient,
         url: str,
         params: dict | None = None,
-        headers: dict | None = None
+        headers: dict | None = None,
+        **kwargs
 ) -> httpx.Response:
-    return await request(client.get, url, params=params, headers=headers)
+    return await request(client.get, url, params=params, headers=headers, **kwargs)
 
 
 async def post(
@@ -117,10 +118,12 @@ async def post(
         cookies: dict | None = None,
         files: dict | None = None,
         timeout: int | None = None,
-        headers: dict | None = None
+        headers: dict | None = None,
+        **kwargs,
 ) -> httpx.Response:
     return await request(
-        client.post, url, json=json, params=params, cookies=cookies, files=files, timeout=timeout, headers=headers
+        client.post, url, json=json, params=params, cookies=cookies, files=files, timeout=timeout, headers=headers,
+        **kwargs
     )
 
 
@@ -128,8 +131,10 @@ async def delete(
         client: httpx.AsyncClient,
         url: str,
         params: dict | None = None,
-        headers: dict | None = None) -> httpx.Response:
-    return await request(client.delete, url, params=params, headers=headers)
+        headers: dict | None = None,
+        **kwargs
+) -> httpx.Response:
+    return await request(client.delete, url, params=params, headers=headers, **kwargs)
 
 
 async def put(
@@ -137,9 +142,10 @@ async def put(
         url: str,
         json: Any | None = None,
         params: dict | None = None,
-        headers: dict | None = None
+        headers: dict | None = None,
+        **kwargs
 ) -> httpx.Response:
-    return await request(client.put, url, json=json, params=params, headers=headers)
+    return await request(client.put, url, json=json, params=params, headers=headers, **kwargs)
 
 
 async def patch(
@@ -147,9 +153,10 @@ async def patch(
         url: str,
         json: Any | None = None,
         params: dict | None = None,
-        headers: dict | None = None
+        headers: dict | None = None,
+        **kwargs
 ) -> httpx.Response:
-    return await request(client.patch, url, json=json, params=params, headers=headers)
+    return await request(client.patch, url, json=json, params=params, headers=headers, **kwargs)
 
 
 __all__ = [delete, put, patch, post, get, request, add_bearer, is_token_expired, decode_jwt_payload, FetchInterval]

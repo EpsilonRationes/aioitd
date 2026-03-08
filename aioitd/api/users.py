@@ -14,7 +14,8 @@ async def get_user(
         client: httpx.AsyncClient,
         access_token: str,
         username_or_id: str | UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> FullUser | UserBlockedByMe | UserBlockMe | PrivateUser:
     """Получить данные пользователя.
 
@@ -33,6 +34,7 @@ async def get_user(
         client,
         f"https://{domain}/api/users/{username_or_id}",
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     if 'isBlockedByMe' in data:
@@ -45,7 +47,7 @@ async def get_user(
         return FullUser(**data)
 
 
-async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn--d1ah4a.com") -> FullMe:
+async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn--d1ah4a.com", **kwargs) -> FullMe:
     """Получить текущего пользователя.
 
     Args:
@@ -59,7 +61,8 @@ async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn
     response = await get(
         client,
         f"https://{domain}/api/users/me",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     data['isFollowedBy'] = False
@@ -71,7 +74,8 @@ async def follow(
         client: httpx.AsyncClient,
         access_token: str,
         username_or_id: str | UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> int:
     """Подписаться на пользователя
 
@@ -94,6 +98,7 @@ async def follow(
         client,
         f"https://{domain}/api/users/{username_or_id}/follow",
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     return response.json()["followersCount"]
 
@@ -102,7 +107,8 @@ async def unfollow(
         client: httpx.AsyncClient,
         access_token: str,
         username_or_id: str | UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> int:
     """Отписать от пользователя
 
@@ -122,6 +128,7 @@ async def unfollow(
         client,
         f"https://{domain}/api/users/{username_or_id}/follow",
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     return response.json()["followersCount"]
 
@@ -132,7 +139,8 @@ async def get_followers(
         username_or_id: str | UUID,
         page: int = 1,
         limit: int = 30,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[PagePagination, list[UserWithFollowing]]:
     """Получить подписчиков пользователя.
 
@@ -156,6 +164,7 @@ async def get_followers(
         f"https://{domain}/api/users/{username_or_id}/followers",
         params={"limit": limit, "page": page},
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     pagination = PagePagination(**data['pagination'])
@@ -170,7 +179,8 @@ async def get_following(
         username_or_id: str | UUID,
         page: int = 1,
         limit: int = 30,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[PagePagination, list[UserWithFollowing]]:
     """Получить подписчики пользователя.
 
@@ -195,6 +205,7 @@ async def get_following(
         f"https://{domain}/api/users/{username_or_id}/following",
         params={"limit": limit, "page": page},
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     pagination = PagePagination(**data['pagination'])
@@ -206,7 +217,8 @@ async def get_following(
 async def get_top_clans(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> list[Clan]:
     """Получить топ кланов.
     
@@ -223,6 +235,7 @@ async def get_top_clans(
         client,
         f'https://{domain}/api/users/stats/top-clans',
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return list(map(Clan.model_validate, data["clans"]))
@@ -231,7 +244,8 @@ async def get_top_clans(
 async def get_who_to_follow(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> list[UserWithFollowersCount]:
     """Получить топ по подпискам.
     
@@ -247,6 +261,7 @@ async def get_who_to_follow(
         client,
         f'https://{domain}/api/users/suggestions/who-to-follow',
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return list(map(UserWithFollowersCount.model_validate, data["users"]))
@@ -257,7 +272,8 @@ async def search_users(
         access_token: str,
         query: str,
         limit: int = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> list[UserWithFollowersCount]:
     """Поиск пользователей.
 
@@ -277,6 +293,7 @@ async def search_users(
         f"https://{domain}/api/users/search",
         params={"q": query, "limit": limit},
         headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     return list(map(UserWithFollowersCount.model_validate, data['users']))
@@ -290,7 +307,8 @@ class PinsResponse(NamedTuple):
 async def get_pins(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> PinsResponse:
     """Получить список пин'ов и текущий пин.
     
@@ -306,7 +324,8 @@ async def get_pins(
     response = await get(
         client,
         f"https://{domain}/api/users/me/pins",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()["data"]
     return PinsResponse(data['activePin'], list(map(PinWithDate.model_validate, data["pins"])))
@@ -316,7 +335,8 @@ async def set_pin(
         client: httpx.AsyncClient,
         access_token: str,
         pin_slug: PinSlug,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> PinSlug:
     """Изменить пин.
 
@@ -336,7 +356,8 @@ async def set_pin(
         client,
         f"https://{domain}/api/users/me/pin",
         json={"slug": pin_slug},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     return PinSlug(response.json()["pin"])
 
@@ -344,7 +365,8 @@ async def set_pin(
 async def delete_pin(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Убрать пин.
     
@@ -360,14 +382,16 @@ async def delete_pin(
     await delete(
         client,
         f"https://{domain}/api/users/me/pin",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
 async def get_privacy(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Privacy:
     """Получить настройки приватности текущего пользователя.
     
@@ -383,7 +407,8 @@ async def get_privacy(
     response = await get(
         client,
         f"https://{domain}/api/users/me/privacy",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return Privacy(**data)
@@ -396,7 +421,8 @@ async def update_privacy(
         likes_visibility: Visibility | None = None,
         wall_access: Visibility | None = None,
         show_last_seen: bool | None = None,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Privacy:
     """Изменить настройки приватности текущего пользователя.
     
@@ -427,7 +453,8 @@ async def update_privacy(
         client,
         f"https://{domain}/api/users/me/privacy",
         json=params,
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return Privacy(**data)
@@ -436,7 +463,8 @@ async def update_privacy(
 async def get_profile(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Profile:
     """Профиль текущего пользователя.
     
@@ -452,7 +480,8 @@ async def get_profile(
     response = await get(
         client,
         f"https://{domain}/api/profile",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return Profile(**data)
@@ -465,7 +494,8 @@ async def update_profile(
         display_name: str | None = None,
         username: str | None = None,
         banner_id: UUID | None = None,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> Me:
     """Обновить профиль.
 
@@ -501,7 +531,8 @@ async def update_profile(
         client,
         f"https://{domain}/api/users/me",
         json=json,
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()
     return Me(**data)
@@ -511,7 +542,8 @@ async def block(
         client: httpx.AsyncClient,
         access_token: str,
         username_or_id: str | UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Изменить настройки приватности текущего пользователя.
     
@@ -530,7 +562,8 @@ async def block(
     await post(
         client,
         f"https://{domain}/api/users/{str(username_or_id)}/block",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
@@ -538,7 +571,8 @@ async def unblock(
         client: httpx.AsyncClient,
         access_token: str,
         username_or_id: str | UUID,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> None:
     """Разблокировать пользователя.
     
@@ -556,7 +590,8 @@ async def unblock(
     await delete(
         client,
         f"https://{domain}/api/users/{str(username_or_id)}/block",
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
 
 
@@ -565,7 +600,8 @@ async def get_blocked(
         access_token: str,
         page: int = 1,
         limit: int = 20,
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> tuple[PagePagination, list[BlockedAuthor]]:
     """Получить заблокированных пользователей.
     
@@ -585,7 +621,8 @@ async def get_blocked(
         client,
         f"https://{domain}/api/users/me/blocked",
         params={"page": page, "limit": limit},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()['data']
     pagination = PagePagination(**data["pagination"])
@@ -597,7 +634,8 @@ async def get_follow_status(
         client: httpx.AsyncClient,
         access_token: str,
         user_ids: list[UUID],
-        domain: str = "xn--d1ah4a.com"
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
 ) -> dict[UUID, bool]:
     """Подписаны ли вы на пользователей.
 
@@ -615,7 +653,8 @@ async def get_follow_status(
         client,
         f"https://{domain}/api/users/follow-status",
         json={"userIds": list(map(str, user_ids))},
-        headers={"authorization": add_bearer(access_token)}
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
     )
     data = response.json()['data']
     result = {}
