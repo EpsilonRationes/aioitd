@@ -4,7 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from aioitd.models.base import Author, ITDDatetime, ITDBaseModel, WallRecipient, Attachment
+from aioitd.models.base import ITDDatetime, ITDBaseModel, Attachment
+from aioitd.models.users import UserWithPin, UserWithAvatar
 
 
 class Option(ITDBaseModel):
@@ -99,7 +100,7 @@ type Span = Annotated[
 class BasePost(ITDBaseModel):
     id: UUID
     content: Annotated[str, Field(max_length=5000)]
-    author: Author
+    author: UserWithPin
     attachments: list[Attachment]
     likes_count: Annotated[int, Field(alias="likesCount")]
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
@@ -123,7 +124,7 @@ class Post(BasePost):
     original_post: Annotated[OriginalPost | None, Field(alias="originalPost")]
     dominant_emoji: Annotated[str | None, Field(alias="dominantEmoji")]
     edited_at: Annotated[ITDDatetime | None, Field(alias="editedAt")]
-    wall_recipient: Annotated[None | WallRecipient, Field(alias="wallRecipient")]  # везде кроме лайков норм
+    wall_recipient: Annotated[None | UserWithAvatar, Field(alias="wallRecipient")]  # везде кроме лайков норм
 
 
 __all__ = [Option, Poll, UpdatePostResponse, Post, OriginalPost, Span, BaseSpan, Mention, HashTagSpan, Monospace,

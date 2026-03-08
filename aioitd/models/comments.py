@@ -3,7 +3,8 @@ from uuid import UUID
 
 from pydantic import Field
 
-from aioitd.models.base import BaseAuthor, ITDBaseModel, ITDDatetime, Author, Attachment
+from aioitd.models.base import ITDBaseModel, ITDDatetime, Attachment
+from aioitd.models.users import UserStab, UserWithPin
 
 
 class UpdateCommentResponse(ITDBaseModel):
@@ -15,7 +16,7 @@ class UpdateCommentResponse(ITDBaseModel):
 class Comment(ITDBaseModel):
     id: UUID
     content: Annotated[str, Field(max_length=5000)]
-    author: Author
+    author: UserStab
     attachments: list[Attachment]
     likes_count: Annotated[int, Field(alias="likesCount")]
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
@@ -25,7 +26,7 @@ class Comment(ITDBaseModel):
 
 
 class Reply(Comment):
-    reply_to: Annotated[BaseAuthor, Field(alias="replyTo")]
+    reply_to: Annotated[UserWithPin, Field(alias="replyTo")]
 
 
 __all__ = [UpdateCommentResponse, Comment, Reply]
