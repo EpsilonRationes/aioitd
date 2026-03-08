@@ -32,7 +32,6 @@ async def comment(
         ParamsValidationError: len(attachments_ids) <= 4
         ITDError: не должно быть одинаковых attachment_ids[i]
         ParamsValidationError: len(content) <= 1_000
-        RateLimitError: ограничение комментариев за время
     """
     if attachment_ids is None:
         attachment_ids = []
@@ -75,7 +74,6 @@ async def replies(
         ITDError: attachments_ids[i] файла с таким UUID не существует
         ParamsValidationError: len(attachments_ids) <= 4
         ParamsValidationError: len(content) <= 1_000
-        RateLimitError: ограничение ответов на комментарии за время
     """
     if attachment_ids is None:
         attachment_ids = []

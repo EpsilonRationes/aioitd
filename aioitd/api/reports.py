@@ -65,7 +65,6 @@ async def report(
 
     Raises:
         UnauthorizedError: ошибка авторизации
-        RateLimitError: ограничение количества жалоб за время
         ValidationError: не найден пост, пользователь или комментарий по target_id
         ValidationError: нельзя отправить жалобу на один и тот же контент
         PramsValidationError: len(description) <= 1000

@@ -86,7 +86,6 @@ async def follow(
         NotFoundError: Пользователь не найден
         ConflictError: Вы уже подписана на этого пользователя
         ValidationError: Нельзя подписаться на себя
-        RateLimitError: Ограничение подписок за время
         UserBlockedError: пользователь заблокирован
 
     Returns: Количество подписчиков пользователя
@@ -116,7 +115,6 @@ async def unfollow(
     Raises:
         UnauthorizedError: ошибка авторизации
         NotFoundError: Пользователь не найден
-        RateLimitError: Ограничение отписок за время
 
     Returns: Количество подписчиков пользователя
     """
