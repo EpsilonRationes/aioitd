@@ -24,7 +24,7 @@ class AsyncITDClient:
             client: AsyncClient = None,
             domain: str = "xn--d1ah4a.com"
     ):
-        """Асинхронный клиент итд.com
+        """Асинхронный клиент итд.com. Обновляет access токен.
 
         Args:
             refresh_token: refresh токен, если не указан, можно отправить запрос только на ендпоинты, не требующие авторизации

@@ -1,4 +1,9 @@
 site_name: aioitd
+site_description: "Асинхронные Python клианте для итд.com"
+site_url: "https://EpsilonRationes.github.io/aioitd/"
+repo_url: "https://github.com/EpsilonRationes/aioitd"
+repo_name: "EpsilonRationes/aioitd"
+
 
 theme:
   name: 'material'
@@ -46,7 +51,7 @@ plugins:
               show_symbol_type_toc: true
               inventories:
                 - https://docs.python.org/3/objects.inv
-              
+
 
 
 
