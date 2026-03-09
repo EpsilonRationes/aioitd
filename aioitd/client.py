@@ -24,17 +24,37 @@ class AsyncITDClient:
             client: AsyncClient = None,
             domain: str = "xn--d1ah4a.com"
     ):
-        """
+        """Асинхронный клиент итд.com
 
         Args:
-            refresh_token:
-            refresh токен, если не указан, можно отправить запрос только на ендпоинты, не требующие авторизации
+            refresh_token: refresh токен, если не указан, можно отправить запрос только на ендпоинты, не требующие авторизации
             timeout: таймаут запросов
             file_upload_timeout: таймаут на загрузку файла
-            client:
-                Если нужно создать несколько `AsyncITDClient` с одним клиентом `httpx.AsyncClient`. Если указан:
-                `AsyncITDClient.close()` не будет закрывать `httpx.AsyncClient`
+            client: Если нужно создать несколько `AsyncITDClient` с одним клиентом `httpx.AsyncClient`. Если указан: `AsyncITDClient.close()` не будет закрывать `httpx.AsyncClient`
+            domain: Домен запросов
 
+        Examples:
+            ```python
+            refresh_token = "ВАШ ТОКЕН"
+            async with AsyncITDClient(refresh_token) as client:
+                await client.get_posts()
+                has_more, notifications = await client.get_notifications()
+            ```
+
+            Без токена:
+
+            ```python
+            async with AsyncITDClient() as client:
+                hashtags = await client.search_hashtags('1')
+            ```
+
+            Без `with`:
+
+            ```python
+            client = AsyncITDClient("ВАШ ТОКЕН")
+            ...
+            await client.close()
+            ```
         """
         self.timeout = timeout
         self.file_upload_timeout = file_upload_timeout
@@ -53,6 +73,16 @@ class AsyncITDClient:
         return self
 
     async def close(self) -> None:
+        """Закрывает httpx сессию.
+
+        Examples:
+            ```python
+            client = AsyncITDClient(...)
+            ...
+            await client.close()
+            ```
+
+        """
         await self.client.aclose()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -76,6 +106,7 @@ class AsyncITDClient:
                 await self.refresh()
 
     async def is_token_expired(self) -> bool:
+        """Просрочен ли access токен"""
         return self._access_token is None or is_token_expired(self._access_token)
 
     @staticmethod

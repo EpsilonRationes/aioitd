@@ -44,10 +44,9 @@ plugins:
               docstring_section_style: spacy
               show_symbol_type_heading: true
               show_symbol_type_toc: true
-            import:
-              - url: https://docs.python.org/3/objects.inv
-                domains: [py, std]
-              - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
+              inventories:
+                - https://docs.python.org/3/objects.inv
+              
 
 
 
