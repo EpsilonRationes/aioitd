@@ -23,6 +23,9 @@ async def search(
         user_limit: максимальное количество выданных пользователей
         hashtag_limit: максимальное количество выданных хештегов
         domain: домен
+    
+    Returns:
+        найденные хештеги, найденные пользователи
 
     Raises:
         ParamsValidationError: 1 <= user_limit <= 20

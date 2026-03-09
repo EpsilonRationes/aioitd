@@ -6,7 +6,7 @@ from uuid import uuid8, UUID
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError
 from tests.api import client, access_token
 
-from aioitd.api.comments import comment, replies, like_comment, delete_like_comment, restore_comment, delete_comment, \
+from aioitd.api.comments import comment, replies, like_comment, unlike_comment, restore_comment, delete_comment, \
     edit_comment
 
 post_id = UUID("f9e1d062-ef17-484b-b02e-11fd0b9cac94")
@@ -82,19 +82,19 @@ async def test_like_comment(client, access_token):
         await like_comment(client, '123', comment_id)
 
     with pytest.raises(UnauthorizedError):
-        await delete_like_comment(client, '123', comment_id)
+        await unlike_comment(client, '123', comment_id)
 
     await like_comment(client, access_token, comment_id)
     await like_comment(client, access_token, comment_id)
 
-    await delete_like_comment(client, access_token, comment_id)
-    await delete_like_comment(client, access_token, comment_id)
+    await unlike_comment(client, access_token, comment_id)
+    await unlike_comment(client, access_token, comment_id)
 
     with pytest.raises(NotFoundError):
         await like_comment(client, access_token, uuid8())
 
     with pytest.raises(NotFoundError):
-        await delete_like_comment(client, access_token, uuid8())
+        await unlike_comment(client, access_token, uuid8())
 
 
 @pytest.mark.asyncio

@@ -322,7 +322,7 @@ async def like_comment(
     return data["likesCount"]
 
 
-async def delete_like_comment(
+async def unlike_comment(
         client: httpx.AsyncClient,
         access_token: str,
         comment_id: UUID,
@@ -371,5 +371,5 @@ async def delete_like_comment(
 
 
 __all__ = [
-    "delete_comment", "like_comment", "delete_like_comment", "comment", "edit_comment", "replies", "restore_comment"
+    "delete_comment", "like_comment", "unlike_comment", "comment", "edit_comment", "replies", "restore_comment"
 ]

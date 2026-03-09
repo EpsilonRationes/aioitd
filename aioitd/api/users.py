@@ -299,23 +299,21 @@ async def search_users(
     return list(map(UserWithFollowersCount.model_validate, data['users']))
 
 
-class PinsResponse(NamedTuple):
-    active_pin: str | None
-    pins: list[PinWithDate]
-
-
 async def get_pins(
         client: httpx.AsyncClient,
         access_token: str,
         domain: str = "xn--d1ah4a.com",
         **kwargs
-) -> PinsResponse:
+) -> tuple[str | None, list[PinWithDate]]:
     """Получить список пин'ов и текущий пин.
     
     Args:
         client: httpx.AsyncClient
         access_token: access токен
         domain: домен
+
+    Returns:
+        (активный пин, список доступных пинов)
 
     Raises:
         UnauthorizedError: неверный access токен
@@ -328,7 +326,7 @@ async def get_pins(
         **kwargs
     )
     data = response.json()["data"]
-    return PinsResponse(data['activePin'], list(map(PinWithDate.model_validate, data["pins"])))
+    return data['activePin'], list(map(PinWithDate.model_validate, data["pins"]))
 
 
 async def set_pin(
@@ -538,6 +536,28 @@ async def update_profile(
     return Me(**data)
 
 
+async def delete_banner(client: httpx.AsyncClient, access_token: str, domain: str = "xn--d1ah4a.com", **kwargs) -> Me:
+    """Удалить баннер.
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        domain: домен
+
+    Raises:
+        UnauthorizedError: неверный access токен
+    """
+    response = await put(
+        client,
+        f"https://{domain}/api/users/me",
+        json={'bannerId': None},
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
+    )
+    data = response.json()
+    return Me(**data)
+
+
 async def block(
         client: httpx.AsyncClient,
         access_token: str,
@@ -665,6 +685,6 @@ async def get_follow_status(
 
 __all__ = [
     'get_user', 'get_me', 'follow', 'unfollow', 'get_followers', 'get_following', 'get_top_clans', 'get_who_to_follow',
-    'search_users', 'PinsResponse', 'get_pins', 'set_pin', 'delete_pin', 'get_privacy', 'update_privacy', 'get_profile',
-    'update_profile', 'block', 'unblock', 'get_blocked', 'get_follow_status'
+    'search_users', 'get_pins', 'set_pin', 'delete_pin', 'get_privacy', 'update_privacy', 'get_profile',
+    'update_profile', 'block', 'unblock', 'get_blocked', 'get_follow_status', 'delete_banner'
 ]

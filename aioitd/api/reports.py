@@ -63,6 +63,9 @@ async def report(
         reason: причина
         description: текст репорта
         domain: домен
+    
+    Returns:
+        Донос
 
     Raises:
         UnauthorizedError: ошибка авторизации

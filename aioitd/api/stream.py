@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Callable
+from typing import AsyncGenerator, Callable, AsyncIterator
 import json
 
 import httpx
@@ -28,8 +28,9 @@ async def _sse_wrapper(
 async def connect_notifications(
         client: httpx.AsyncClient,
         access_token: str,
-        domain: str = "xn--d1ah4a.com"
-) -> AsyncGenerator[AsyncGenerator[ConnectedEvent | NotificationEvent | SSEEvent, None], None]:
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> AsyncGenerator[AsyncIterator[ConnectedEvent | NotificationEvent | SSEEvent], None]:
     """Подключиться к SEE стриму уведомлений.
 
     Args:
@@ -47,15 +48,26 @@ async def connect_notifications(
                 if isinstance(event, NotificationEvent):
                     print(event)
     """
+    if 'timeout' in kwargs:
+        timeout = httpx.Timeout(
+            connect=kwargs['timeout'],
+            read=ITD_SSE_PING + 1,
+            write=kwargs['timeout'],
+            pool=kwargs['timeout']
+        )
+        del kwargs['timeout']
+    else:
+        timeout = httpx.Timeout(
+            connect=30,
+            read=ITD_SSE_PING + 1,
+            write=30,
+            pool=30
+        )
     async with httpx_sse.aconnect_sse(
             client, "GET", f"https://{domain}/api/notifications/stream",
             headers={"authorization": add_bearer(access_token)},
-            timeout=httpx.Timeout(
-                connect=30.0,
-                read=ITD_SSE_PING + 1,
-                write=30.0,
-                pool=30.0
-            ),
+            timeout=timeout,
+            **kwargs
     ) as event_source:
         yield _sse_wrapper(event_source.aiter_sse)
 

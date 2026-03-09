@@ -15,6 +15,9 @@ async def get_verification_status(
         client: httpx.AsyncClient
         access_token: access токен
         domain: домен
+    
+    Returns:
+        Статус верификации
 
     Raises:
         UnauthorizedError: ошибка авторизации

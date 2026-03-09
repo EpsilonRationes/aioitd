@@ -11,7 +11,7 @@ from aioitd.models.files import GetFile, File
 async def get_file(
         client: httpx.AsyncClient,
         access_token: str,
-        file_id: UUID | str,
+        file_id: UUID,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> GetFile:
@@ -22,6 +22,9 @@ async def get_file(
         access_token: access токен
         file_id: UUID файла
         domain: домен
+
+    Returns:
+            Файл с датой создания
 
     Raises:
         UnauthorizedError: ошибка авторизации
@@ -57,12 +60,15 @@ async def upload_file(
         file: файл
         domain: домен
 
+    Returns:
+        Файл
+        
     Raises:
         UnauthorizedError: ошибка авторизации
         ValidationError: недопустимый тип файла
         TooLargeError: размер запроса слишком большой
         UploadError: ошибка загрузки файла
-        ContentModerationError: Не далось проверить файл
+        ContentModerationError: Не удалось проверить файл
 
     Examples:
 

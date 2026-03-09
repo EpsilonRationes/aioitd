@@ -9,7 +9,7 @@ from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsVali
 
 from tests.api import client, access_token
 
-from aioitd.api.posts import get_post, delete_post, restore_post, create_post, like_post, delete_like_post, pin_post, \
+from aioitd.api.posts import get_post, delete_post, restore_post, create_post, like_post, unlike_post, pin_post, \
     unpin_post, get_posts_by_user, get_posts_by_user_liked, get_posts_by_user_wall, get_post_comments, update_post, \
     repost, get_posts
 
@@ -83,17 +83,17 @@ async def test_delete_restore_post(client, access_token):
     with pytest.raises(UnauthorizedError):
         await like_post(client, '123', uuid8())
     with pytest.raises(UnauthorizedError):
-        await delete_like_post(client, '123', uuid8())
+        await unlike_post(client, '123', uuid8())
 
     with pytest.raises(NotFoundError):
         await like_post(client, access_token, uuid8())
     with pytest.raises(NotFoundError):
-        await delete_like_post(client, access_token, uuid8())
+        await unlike_post(client, access_token, uuid8())
 
     await like_post(client, access_token, text_post_id)
     await like_post(client, access_token, text_post_id)
-    await delete_like_post(client, access_token, text_post_id)
-    await delete_like_post(client, access_token, text_post_id)
+    await unlike_post(client, access_token, text_post_id)
+    await unlike_post(client, access_token, text_post_id)
 
 
 @pytest.mark.asyncio

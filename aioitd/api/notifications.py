@@ -1,15 +1,9 @@
-from typing import NamedTuple
 from uuid import UUID
 
 import httpx
 
 from aioitd.fetch import add_bearer, get, post
 from aioitd.models.notifications import Notification
-
-
-class NotificationsResponse(NamedTuple):
-    has_more: bool
-    notifications: list[Notification]
 
 
 async def get_notifications(
@@ -19,7 +13,7 @@ async def get_notifications(
         limit: int = 30,
         domain: str = "xn--d1ah4a.com",
         **kwargs
-) -> NotificationsResponse:
+) -> tuple[bool, list[Notification]]:
     """Получить уведомления.
     
     Args:
@@ -28,6 +22,9 @@ async def get_notifications(
         offset: сдвиг
         limit: максимально количество уведомлений в ответе, любое число
         domain: домен
+
+    Returns:
+        bool есть ли ещё уведомления, list[Notification] список уведомлений
 
     Raises:
         UnauthorizedError: ошибка авторизации
@@ -41,10 +38,7 @@ async def get_notifications(
         **kwargs
     )
     data = response.json()
-    return NotificationsResponse(
-        data["hasMore"],
-        list(map(Notification.model_validate, data["notifications"]))
-    )
+    return data["hasMore"], list(map(Notification.model_validate, data["notifications"]))
 
 
 async def read_batch_notifications(
@@ -66,7 +60,8 @@ async def read_batch_notifications(
         UnauthorizedError: ошибка авторизации
         ParamsValidationError: len(notifications_ids) <= 20
 
-    Returns: Количество прочитанных уведомлений
+    Returns: 
+        Количество прочитанных уведомлений
     """
     response = await post(
         client,
@@ -94,6 +89,9 @@ async def read_notification(
         notification_id: UUID уведомления
         domain: домен
 
+    Returns:
+        Успешна ли операция
+    
     Raises:
         UnauthorizedError: ошибка авторизации
 
@@ -124,7 +122,8 @@ async def get_notifications_count(
     Raises:
         UnauthorizedError: ошибка авторизации
 
-    Returns: Количество непрочитанных уведомлений.
+    Returns: 
+        Количество непрочитанных уведомлений.
     """
     response = await get(
         client,
@@ -152,7 +151,8 @@ async def read_all_notifications(
     Raises:
         UnauthorizedError: ошибка авторизации
 
-    Returns: успешна ли операция
+    Returns: 
+        Успешна ли операция
     """
     response = await post(
         client,
@@ -165,6 +165,6 @@ async def read_all_notifications(
 
 
 __all__ = [
-    'NotificationsResponse', 'get_notifications', 'read_batch_notifications', 'read_notification',
-    'read_all_notifications', 'get_notifications_count'
+    'get_notifications', 'read_batch_notifications', 'read_notification', 'read_all_notifications',
+    'get_notifications_count'
 ]

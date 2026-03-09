@@ -132,7 +132,7 @@ async def like_post(
     return data["likesCount"]
 
 
-async def delete_like_post(
+async def unlike_post(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
@@ -466,7 +466,7 @@ async def vote(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
-        options_ids: list[UUID],
+        option_ids: list[UUID],
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> Poll:
@@ -476,7 +476,7 @@ async def vote(
         client: httpx.AsyncClient
         access_token: access токен
         post_id: UUID поста
-        options_ids: список UUID выбранных вариантов
+        option_ids: список UUID выбранных вариантов
         domain: домен
 
     Raises:
@@ -490,7 +490,7 @@ async def vote(
     response = await post(
         client,
         f"https://{domain}/api/posts/{post_id}/poll/vote",
-        json={"optionIds": list(map(str, options_ids))},
+        json={"optionIds": list(map(str, option_ids))},
         headers={"authorization": add_bearer(access_token)},
         **kwargs
     )
@@ -661,7 +661,7 @@ async def repost(
 
 
 __all__ = [
-    'get_post', 'delete_post', 'restore_post', 'like_post', 'delete_like_post', 'view_post', 'pin_post', 'unpin_post',
+    'get_post', 'delete_post', 'restore_post', 'like_post', 'unlike_post', 'view_post', 'pin_post', 'unpin_post',
     'get_posts_by_user', 'get_posts_by_user_liked', 'get_posts_by_user_wall', 'get_posts', 'get_post_comments', 'vote',
     'create_post', 'update_post', 'repost'
 ]
