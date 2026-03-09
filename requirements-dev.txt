@@ -1,3 +1,4 @@
+-e .
 httpx
 pydantic
 httpx-sse
