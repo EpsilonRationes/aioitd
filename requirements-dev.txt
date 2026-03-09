@@ -6,3 +6,4 @@ mkdocs
 ruff
 mkdocstrings-python
 mkdocs-material
+griffe_typingdoc
