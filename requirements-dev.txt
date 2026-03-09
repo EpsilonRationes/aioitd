@@ -1,6 +1,6 @@
-httpx==0.28.1
-pydantic==2.12.5
-httpx-sse==0.4.5
+httpx
+pydantic
+httpx-sse
 pytest
 mkdocs
 ruff
