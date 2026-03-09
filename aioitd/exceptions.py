@@ -20,15 +20,26 @@ class ITDError(Exception):
         'Already reposted this post': 'Нельзя репостнуть пост два раза',
         'Cannot repost your own post': "Нельзя репостить свои посты",
         'User not found': 'Пользователь не найден',
-        'Content or attachments required': 'Необходимы content или attachments, нельзя создать пустой пост',
+        'Content or attachments required': 'Необходимы content или attachments, нельзя создать пустой комментарий',
+        'Not allowed to restore this comment': 'Нет прав для восстановления этого комментария',
         'Maximum 10 attachments allowed per post': 'К посту можно прикрепить максимум 10 файлов',
         'Not allowed to edit this post': "Нет прав для редактирования этого поста",
         'Comment not found': 'Комментарий не найден',
         'Not allowed to delete this comment': 'нет прав на удаление комментария',
+        'Not allowed to edit this comment': 'нет прав на редактирование этого комментария',
         'Rate limit exceeded': 'Слишком много запросов',
         'Content, attachments or poll required': "Нельзя создать пустой пост",
         'Already following this user': 'Уже подписаны на этого пользователя',
-        'Session expired': 'Токен истёк'
+        'Session expired': 'Токен истёк',
+        'You do not own this pin': 'Вы не обладаете этим пином',
+        'User already blocked': 'Пользователь уже заблокирован',
+        'Cannot block yourself': "Нельзя заблокировать себя",
+        'User is not blocked': 'Пользователь не заблокирован',
+        'Cannot follow yourself': "Нельзя подписать на себя",
+        'You can only use your own files as banner': 'На баннер можно поставить только свой файл',
+        'Banner file not found': 'Файл для баннера не найден',
+        'Username is already taken': 'Имя пользователя уже занято',
+        "Wall recipient not found": 'Пользователь не найден'
     }
 
     def __init__(self, code: str, message: str):
@@ -41,7 +52,7 @@ class ITDError(Exception):
 
 class UnauthorizedError(ITDError):
     code = "UNAUTHORIZED"
-    message = "Ошибка авторизации (просрочен access токен)"
+    message = "Ошибка авторизации"
 
 
 class ServerError(ITDError):
@@ -55,10 +66,6 @@ class GatewayTimeOutError(ITDError):
 
 class UnknowError(ITDError):
     code = "UNKNOWN_ERROR"
-
-
-class Error429(ITDError):
-    code = "Too Many Requests"
 
 
 class RateLimitError(ITDError):
@@ -146,6 +153,26 @@ class UserBlockedError(ITDError):
     code = "USER_BLOCKED"
 
 
+class PinNotOwnedError(ITDError):
+    code = "PIN_NOT_OWNED"
+
+
+class ContentModerationError(ITDError):
+    code = "CONTENT_MODERATION_ERROR"
+
+
+class UsernameTakenError(ITDError):
+    code = "USERNAME_TAKEN"
+
+
+class VideoRequiresVerificationError(ITDError):
+    code = "VIDEO_REQUIRES_VERIFICATION"
+
+
+class WallClosedError(ITDError):
+    code = "WALL_CLOSED"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -165,7 +192,12 @@ itd_exceptions = [
     ServerError,
     UploadError,
     UserBlockedError,
-    TokenExpiredError
+    TokenExpiredError,
+    PinNotOwnedError,
+    ContentModerationError,
+    UsernameTakenError,
+    VideoRequiresVerificationError,
+    WallClosedError
 ]
 
 itd_codes = {}

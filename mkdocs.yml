@@ -1,0 +1,60 @@
+site_name: aioitd
+site_description: "Асинхронные Python клианте для итд.com"
+site_url: "https://EpsilonRationes.github.io/aioitd/"
+repo_url: "https://github.com/EpsilonRationes/aioitd"
+repo_name: "EpsilonRationes/aioitd"
+
+
+theme:
+  name: 'material'
+  features:
+    - navigation.indexes
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      title: "Содержание"
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+plugins:
+  - search
+  - mkdocstrings:
+        handlers:
+          python:
+            paths: [.]
+            options:
+              extensions:
+                - griffe_typingdoc
+              docstring_style: google
+              show_source: false
+              members_order: source
+              separate_signature: true
+              filters:
+                - '!^_'
+                - '!model_config'
+              docstring_options:
+                ignore_init_summary: true
+              merge_init_into_class: true
+              show_signature_annotations: true
+              signature_crossrefs: true
+              show_labels: false
+              show_if_no_docstring: true
+              preload_modules:
+                - httpx
+                - httpx_sse
+              inherited_members: true
+              unwrap_annotated: true
+              docstring_section_style: spacy
+              show_symbol_type_heading: true
+              show_symbol_type_toc: true
+              inventories:
+                - https://docs.python.org/3/objects.inv
+
+
+
+
+
+
+

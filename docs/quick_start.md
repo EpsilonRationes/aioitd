@@ -1,12 +1,5 @@
-# aioitd
+# Быстрый старт
 
-> **⚠️ Внимание**
-> 
-> На данный момент библиотека не работает, версия 0.3 уже в разработке.
-
-Асинхронный Python клиент для итд.com
-
-документация: https://EpsilonRationes.github.io/aioitd/
 
 ## Установка
 
@@ -37,6 +30,7 @@ asyncio.run(main())
 Для остальных функций необходим `refresh_token`
 
 Чтобы получить refresh_token:
+
 1. Войди в аккаунт на итд.com 
 2. Откройть devtools
 3. Среди табов выбрать network (сеть)
@@ -45,6 +39,7 @@ asyncio.run(main())
 6. В куки запроса скопировать `refresh_token`
 
 Или:
+
 1. Войти в аккаунт на итд.com
 2. Откройть devtools
 3. Среди табов выбрать application (приложение)
@@ -134,6 +129,3 @@ while True:
     except RateLimitError as ex:
         await asyncio.sleep(ex.retry_after)
 ```
-
-
-Автор в итд [@FIRST_TM](https://итд.com/@FIRST_TM)
