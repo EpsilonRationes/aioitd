@@ -23,3 +23,12 @@ dependencies = ["httpx", "pydantic", 'httpx-sse']
 
 [project.urls]
 github = "https://github.com/EpsilonRationes/aioitd"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "mkdocs",
+    "ruff",
+    "mkdocstrings-python",
+    'mkdocs-material'
+]
