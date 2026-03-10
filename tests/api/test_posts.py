@@ -5,7 +5,7 @@ from uuid import uuid8, UUID
 
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError, \
     NotPinedError, UserBlockedError, VideoRequiresVerificationError, WallClosedError, Link, Monospace, Strike, \
-    Underline, Bold, Italic, Spoiler, Mention, HashTagSpan
+    Underline, Bold, Italic, Spoiler, Mention, HashTagSpan, EditWindowExpiredError
 
 from tests.api import client, access_token
 
@@ -381,3 +381,11 @@ async def test_create_post(client, access_token):
 
     with pytest.raises(NotFoundError):
         await create_post(client, access_token, '1', wall_recipient_id=uuid8())
+
+
+@pytest.mark.asyncio
+async def test_update_post_window(client, access_token):
+    try:
+        await update_post(client, access_token, UUID("b65e58f1-84a3-41d4-8626-e56ea46be97b"), "update")
+    except EditWindowExpiredError:
+        pass

@@ -604,6 +604,7 @@ async def update_post(
         NotFoundError: Пост не найден
         ValidationError: 1 <= len(content) <= 1_000
         ForbiddenError: Нет прав для редактирования этого поста
+        EditWindowExpiredError: пост нельзя изменять спустя несколько дней
     """
 
     response = await put(

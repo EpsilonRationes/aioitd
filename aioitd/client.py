@@ -1289,6 +1289,7 @@ class AsyncITDClient:
             NotFoundError: Пост не найден
             ValidationError: 1 <= len(content) <= 1_000
             ForbiddenError: Нет прав для редактирования этого поста
+            EditWindowExpiredError: пост нельзя изменять спустя несколько дней
         """
         return await update_post(
             self.client, self._access_token, post_id, content,

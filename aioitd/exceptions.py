@@ -173,6 +173,9 @@ class WallClosedError(ITDError):
     code = "WALL_CLOSED"
 
 
+class EditWindowExpiredError(ITDError):
+    code = "EDIT_WINDOW_EXPIRED"
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -197,7 +200,8 @@ itd_exceptions = [
     ContentModerationError,
     UsernameTakenError,
     VideoRequiresVerificationError,
-    WallClosedError
+    WallClosedError,
+    EditWindowExpiredError
 ]
 
 itd_codes = {}
