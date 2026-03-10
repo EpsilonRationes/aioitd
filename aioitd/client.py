@@ -105,7 +105,7 @@ class AsyncITDClient:
             if self.is_token_expired():
                 await self.refresh()
 
-    async def is_token_expired(self) -> bool:
+    def is_token_expired(self) -> bool:
         """Просрочен ли access токен"""
         return self._access_token is None or is_token_expired(self._access_token)
 
