@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import NamedTuple
 from uuid import UUID
 
 import httpx
 
+from aioitd import datetime_from_itd_format
 from aioitd.fetch import get, add_bearer, post, delete, put
 from aioitd.models.users import BlockedAuthor, FullUser, UserBlockedByMe, Me, PinWithDate, UserBlockMe, PrivateUser, \
     FullMe, \
@@ -683,8 +685,69 @@ async def get_follow_status(
     return result
 
 
+async def delete_account(
+        client: httpx.AsyncClient,
+        access_token: str,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> datetime:
+    """Удалить аккаунт
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        domain: домен
+
+    Raises:
+        UnauthorizedError: неверный access токен
+
+    Returns:
+        Время, до которого можно восстановить аккаунт
+
+    """
+    response = await delete(
+        client,
+        f"https://{domain}/api/users/me",
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
+    )
+    data = response.json()
+    return datetime_from_itd_format(data['restoreDeadline'])
+
+
+async def restore_account(
+        client: httpx.AsyncClient,
+        access_token: str,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> bool:
+    """Удалить аккаунт
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        domain: домен
+
+    Raises:
+        UnauthorizedError: неверный access токен
+
+    Returns:
+        Успешна ли операция
+
+    """
+    response = await delete(
+        client,
+        f"https://{domain}/api/users/me/restore",
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
+    )
+    data = response.json()
+    return data['restored']
+
+
 __all__ = [
     'get_user', 'get_me', 'follow', 'unfollow', 'get_followers', 'get_following', 'get_top_clans', 'get_who_to_follow',
     'search_users', 'get_pins', 'set_pin', 'delete_pin', 'get_privacy', 'update_privacy', 'get_profile',
-    'update_profile', 'block', 'unblock', 'get_blocked', 'get_follow_status', 'delete_banner'
+    'update_profile', 'block', 'unblock', 'get_blocked', 'get_follow_status', 'delete_banner', 'delete_account',
+    'restore_account'
 ]

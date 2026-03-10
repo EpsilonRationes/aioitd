@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import datetime
 from functools import wraps
 from typing import IO, Any, TypeVar, ParamSpec, Callable, Awaitable, Literal, AsyncIterator, \
     AsyncGenerator
@@ -852,6 +853,31 @@ class AsyncITDClient:
         return await get_follow_status(
             self.client, self._access_token, user_ids, self.domain, timeout=self.timeout, **kwargs
         )
+
+    @auth_required
+    async def delete_account(self, **kwargs) -> datetime:
+        """Удалить аккаунт
+
+        Raises:
+            UnauthorizedError: неверный access токен
+
+        Returns:
+            Время, до которого можно восстановить аккаунт
+
+        """
+        return await delete_account(self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs)
+
+    async def restore_account(self, **kwargs) -> bool:
+        """Удалить аккаунт
+
+        Raises:
+            UnauthorizedError: неверный access токен
+
+        Returns:
+            Успешна ли операция
+
+        """
+        return await restore_account(self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs)
 
     @auth_required
     async def get_post(
