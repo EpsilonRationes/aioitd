@@ -64,7 +64,7 @@ async def request(
         raise NotAllowedError(NotAllowedError.code, "Not Allowed")
     if result.status_code == 504:
         raise GatewayTimeOutError(GatewayTimeOutError.code, "504 Gateway Time-out")
-    print(result.text)
+
     try:
         data = result.json()
         if 'type' in data:
