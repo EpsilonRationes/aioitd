@@ -1529,5 +1529,12 @@ class AsyncITDClient:
         ) as events:
             yield events
 
+    async def get_changelog(
+            self,
+            **kwargs
+    ) -> list[Version]:
+        """Получить чейнджлог."""
+        return await get_changelog(self.client, self.domain, timeout=self.timeout, **kwargs)
+
 
 __all__ = ['AsyncITDClient']

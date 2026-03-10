@@ -7,3 +7,4 @@ from .posts import *
 from .reports import *
 from .stream import *
 from .users import *
+from .platform import *

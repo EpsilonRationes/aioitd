@@ -9,3 +9,4 @@ from .search import *
 from .stream import *
 from .users import *
 from .verification import *
+from .platform import *
