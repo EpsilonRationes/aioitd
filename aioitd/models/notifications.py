@@ -38,4 +38,14 @@ class Notification(ITDBaseModel):
     type: NotificationType
 
 
-__all__ = ['NotificationType', 'Actor', 'Notification']
+class NotificationsSettings(ITDBaseModel):
+    comments: bool
+    enabled: bool
+    follows: bool
+    mentions: bool
+    sound: bool
+    likes: bool
+    wall_posts: Annotated[bool, Field(alias="wallPosts")]
+
+
+__all__ = ['NotificationType', 'Actor', 'Notification', 'NotificationsSettings']

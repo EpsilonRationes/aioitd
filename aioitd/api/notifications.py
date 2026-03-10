@@ -2,8 +2,8 @@ from uuid import UUID
 
 import httpx
 
-from aioitd.fetch import add_bearer, get, post
-from aioitd.models.notifications import Notification
+from aioitd.fetch import add_bearer, get, post, put
+from aioitd.models.notifications import Notification, NotificationsSettings
 
 
 async def get_notifications(
@@ -164,7 +164,91 @@ async def read_all_notifications(
     return data["success"]
 
 
+async def get_notification_settings(
+        client: httpx.AsyncClient,
+        access_token: str,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> NotificationsSettings:
+    """Получить настройки уведомлений.
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        domain: домен
+
+    Raises:
+        UnauthorizedError: ошибка авторизации
+
+    Returns: 
+        Настройки уведомлений
+    """
+    response = await get(
+        client,
+        f"https://{domain}/api/notifications/settings",
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
+    )
+    data = response.json()
+    return NotificationsSettings(**data)
+
+
+async def update_notification_settings(
+        client: httpx.AsyncClient,
+        access_token: str,
+        comments: bool | None = None,
+        enabled: bool | None = None,
+        follows: bool | None = None,
+        mentions: bool | None = None,
+        sound: bool | None = None,
+        likes: bool | None = None,
+        wall_posts: bool | None = None,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> NotificationsSettings:
+    """Настроить уведомления
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        comments: комментарии
+        enabled: включены ли уведомления
+        follows: подписки
+        mentions: упоминания
+        sound: звуки при уведомлениях
+        likes: лайки
+        wall_posts: посты на стене
+        domain: домен
+
+    Returns:
+        Новые настройки уведомлений
+
+    Raises:
+        UnauthorizedError: ошибка авторизации
+    """
+    json = {
+        'comments': comments,
+        'enabled': enabled,
+        'follows': follows,
+        'mentions': mentions,
+        'sound': sound,
+        'likes': likes,
+        'wallPosts': wall_posts,
+    }
+    json = dict(filter(lambda x: x[1] is not None, json.items()))
+
+    response = await put(
+        client,
+        f"https://{domain}/api/notifications/settings",
+        json=json,
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
+    )
+    data = response.json()
+    return NotificationsSettings(**data)
+
+
 __all__ = [
     'get_notifications', 'read_batch_notifications', 'read_notification', 'read_all_notifications',
-    'get_notifications_count'
+    'get_notifications_count', 'get_notification_settings', 'update_notification_settings'
 ]

@@ -6,7 +6,7 @@ from tests.api import client, access_token
 
 from aioitd import UnauthorizedError, ParamsValidationError, ITDError
 from aioitd.api.notifications import get_notifications, get_notifications_count, read_all_notifications, \
-    read_notification, read_batch_notifications
+    read_notification, read_batch_notifications, get_notification_settings, update_notification_settings
 
 
 @pytest.mark.asyncio
@@ -64,3 +64,19 @@ async def test_read_all_notifications(client, access_token):
         await read_all_notifications(client, '123')
 
     await read_all_notifications(client, access_token)
+
+
+@pytest.mark.asyncio
+async def test_get_notifications_settings(client, access_token):
+    with pytest.raises(UnauthorizedError):
+        await get_notification_settings(client, '123')
+    await get_notification_settings(client, access_token)
+
+
+@pytest.mark.asyncio
+async def test_update_notifications_settings(client, access_token):
+    with pytest.raises(UnauthorizedError):
+        await update_notification_settings(client, '123')
+    await update_notification_settings(client, access_token)
+    await update_notification_settings(client, access_token, enabled=False)
+    await update_notification_settings(client, access_token, True, True, True, True, True, True, True)

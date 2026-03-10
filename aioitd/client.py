@@ -289,6 +289,51 @@ class AsyncITDClient:
                                             **kwargs)
 
     @auth_required
+    async def get_notification_settings(self, **kwargs) -> NotificationsSettings:
+        """Получить настройки уведомлений.
+
+        Raises:
+            UnauthorizedError: ошибка авторизации
+
+        Returns:
+            Настройки уведомлений
+        """
+        return await get_notification_settings(self.client, self._access_token, self.domain, timeout=self.timeout,
+                                               **kwargs)
+
+    @auth_required
+    async def update_notification_settings(
+            self,
+            comments: bool | None = None,
+            enabled: bool | None = None,
+            follows: bool | None = None,
+            mentions: bool | None = None,
+            sound: bool | None = None,
+            likes: bool | None = None,
+            wall_posts: bool | None = None,
+            **kwargs
+    ) -> NotificationsSettings:
+        """Настроить уведомления
+
+        Args:
+            comments: комментарии
+            enabled: включены ли уведомления
+            follows: подписки
+            mentions: упоминания
+            sound: звуки при уведомлениях
+            likes: лайки
+            wall_posts: посты на стене
+
+        Returns:
+            Новые настройки уведомлений
+
+        Raises:
+            UnauthorizedError: ошибка авторизации
+        """
+        return await update_notification_settings(self.client, self._access_token, comments, enabled, follows, mentions,
+                                                  sound, likes, wall_posts, self.domain, timeout=self.timeout, **kwargs)
+
+    @auth_required
     async def get_file(self, file_id: UUID, **kwargs) -> GetFile:
         """Получить файл.
         
