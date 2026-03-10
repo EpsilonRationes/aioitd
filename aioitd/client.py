@@ -9,7 +9,7 @@ from httpx import AsyncClient
 
 from aioitd.models import *
 from aioitd.api import *
-from aioitd.fetch import is_token_expired
+from aioitd.fetch import is_token_expired, decode_jwt_payload
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -147,6 +147,11 @@ class AsyncITDClient:
         await change_password(
             self.client, self._access_token, old_password, new_password, self.domain, timeout=self.timeout, **kwargs
         )
+
+    @auth_required
+    async def get_me_uuid(self) -> UUID:
+        """Получить uuid из access токена"""
+        return UUID(decode_jwt_payload(self._access_token)['sub'])
 
     async def search_hashtags(self, query: str, limit: int = 20, **kwargs) -> list[Hashtag]:
         """Поиск хештегов.
