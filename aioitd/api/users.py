@@ -721,7 +721,7 @@ async def restore_account(
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> bool:
-    """Удалить аккаунт
+    """Восстановить аккаунт
 
     Args:
         client: httpx.AsyncClient
@@ -735,7 +735,7 @@ async def restore_account(
         Успешна ли операция
 
     """
-    response = await delete(
+    response = await post(
         client,
         f"https://{domain}/api/users/me/restore",
         headers={"authorization": add_bearer(access_token)},
