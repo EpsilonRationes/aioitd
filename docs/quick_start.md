@@ -105,8 +105,8 @@ async def main():
 from aioitd import NotificationEvent, ConnectedEvent
 
 async def main():
-    async with AsyncITDClient(refresh_token) as itd:
-        async with itd.connect_sse() as events:
+    async with AsyncITDClient(refresh_token) as client:
+        async with client.connect_notifications() as events:
             async for event in events:
                 if isinstance(event, ConnectedEvent):
                     print("Прослушка начата")
