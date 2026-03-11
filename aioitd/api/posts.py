@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Literal
 from uuid import UUID
 
@@ -250,13 +251,21 @@ async def unpin_post(
     return data["success"]
 
 
+class PostSort(str, Enum):
+    NEW = "new"
+    POPULAR = "popular"
+
+    def __str__(self):
+        return self.value
+
+
 async def get_posts_by_user(
         client: httpx.AsyncClient,
         access_token: str,
         username_or_id: str | UUID,
         cursor: str | None = None,
         limit: int = 20,
-        sort: Literal["new", "popular"] = "new",
+        sort: PostSort | Literal["new", "popular"] = PostSort.NEW,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> tuple[Pagination, list[Post]]:
@@ -300,6 +309,7 @@ async def get_posts_by_user_liked(
         username_or_id: str | UUID,
         cursor: str | None = None,
         limit: int = 20,
+        sort: PostSort | Literal["new", "popular"] = PostSort.NEW,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> tuple[Pagination, list[Post]]:
@@ -311,6 +321,7 @@ async def get_posts_by_user_liked(
         username_or_id: имя пользователя или его UUID
         cursor: next_cursor на предыдущей странице
         limit: максимальное количество выданных постов
+        sort: сортировка
         domain: домен
 
     Raises:
@@ -322,7 +333,7 @@ async def get_posts_by_user_liked(
     response = await get(
         client,
         f"https://{domain}/api/posts/user/{username_or_id}/liked/",
-        params={"sort": "new", "limit": limit} | (
+        params={"sort": sort, "limit": limit} | (
             {} if cursor is None else {"cursor": cursor}),
         headers={"authorization": add_bearer(access_token)},
         **kwargs
@@ -343,6 +354,7 @@ async def get_posts_by_user_wall(
         username_or_id: str | UUID,
         cursor: None = None,
         limit: int = 20,
+        sort: PostSort | Literal["new", "popular"] = PostSort.NEW,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> tuple[Pagination, list[Post]]:
@@ -354,6 +366,7 @@ async def get_posts_by_user_wall(
         username_or_id: имя пользователя или его UUID
         cursor: next_cursor на предыдущей странице
         limit: максимальное количество выданных постов
+        sort: сортировка
         domain: домен
 
     Raises:
@@ -365,7 +378,7 @@ async def get_posts_by_user_wall(
     response = await get(
         client,
         f"https://{domain}/api/posts/user/{username_or_id}/wall",
-        params={"sort": "new", "limit": limit} | (
+        params={"sort": sort, "limit": limit} | (
             {} if cursor is None else {"cursor": cursor}),
         headers={"authorization": add_bearer(access_token)},
         **kwargs
@@ -377,12 +390,21 @@ async def get_posts_by_user_wall(
     return pagination, posts
 
 
+class Tab(str, Enum):
+    POPULAR = 'popular'
+    FOLLOWING = 'following'
+    CLAN = 'clan'
+
+    def __str__(self):
+        return self.value()
+
+
 async def get_posts(
         client: httpx.AsyncClient,
         access_token: str,
         cursor: None = None,
         limit: int = 20,
-        tab: Literal['popular', 'following', 'clan'] = 'popular',
+        tab: Tab | Literal['popular', 'following', 'clan'] = Tab.POPULAR,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> tuple[Pagination, list[Post]]:
@@ -422,12 +444,21 @@ async def get_posts(
     return pagination, posts
 
 
+class ComemntSort(str, Enum):
+    POPULAR = 'popular'
+    NEWEST = 'newest'
+    OLDEST = 'oldest'
+
+    def __str__(self):
+        return self.value
+
+
 async def get_post_comments(
         client: httpx.AsyncClient,
         access_token: str,
         post_id: UUID,
         cursor: str | None = None,
-        sort: Literal["popular", "newest", "oldest"] = "popular",
+        sort: Literal["popular", "newest", "oldest"] = ComemntSort.NEWEST,
         limit: int = 20,
         domain: str = "xn--d1ah4a.com",
         **kwargs
@@ -664,5 +695,5 @@ async def repost(
 __all__ = [
     'get_post', 'delete_post', 'restore_post', 'like_post', 'unlike_post', 'view_post', 'pin_post', 'unpin_post',
     'get_posts_by_user', 'get_posts_by_user_liked', 'get_posts_by_user_wall', 'get_posts', 'get_post_comments', 'vote',
-    'create_post', 'update_post', 'repost'
+    'create_post', 'update_post', 'repost', 'Tab', 'PostSort'
 ]

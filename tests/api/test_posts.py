@@ -6,6 +6,7 @@ from uuid import uuid8, UUID
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError, \
     NotPinedError, UserBlockedError, VideoRequiresVerificationError, WallClosedError, Link, Monospace, Strike, \
     Underline, Bold, Italic, Spoiler, Mention, HashTagSpan, EditWindowExpiredError
+from aioitd.api import PostSort
 
 from tests.api import client, access_token
 
@@ -165,12 +166,15 @@ async def test_get_posts_by_user_liked(client, access_token):
     with pytest.raises(UserBlockedError):
         await get_posts_by_user_liked(client, access_token, blocked_user)
 
-    cursor = None
-    while True:
-        pagination, users = await get_posts_by_user_liked(client, access_token, 'blue_cir', cursor=cursor)
-        cursor = pagination.next_cursor
-        if cursor is None:
-            break
+    for sort in [PostSort.NEW, PostSort.POPULAR]:
+        cursor = None
+        while True:
+            pagination, users = await get_posts_by_user_liked(
+                client, access_token, 'blue_cir', cursor=cursor, sort=sort
+            )
+            cursor = pagination.next_cursor
+            if cursor is None:
+                break
 
     await get_posts_by_user_liked(client, access_token, UUID("5ee59a22-ae5a-49f9-9090-5a72e6285fad"))
 
@@ -192,12 +196,15 @@ async def test_get_posts_by_user_wall(client, access_token):
     with pytest.raises(UserBlockedError):
         await get_posts_by_user_wall(client, access_token, blocked_user)
 
-    cursor = None
-    while True:
-        pagination, users = await get_posts_by_user_wall(client, access_token, 'blue_cir', cursor=cursor)
-        cursor = pagination.next_cursor
-        if cursor is None:
-            break
+    for sort in [PostSort.NEW, PostSort.POPULAR]:
+        cursor = None
+        while True:
+            pagination, users = await get_posts_by_user_wall(
+                client, access_token, 'blue_cir', cursor=cursor, sort=sort
+            )
+            cursor = pagination.next_cursor
+            if cursor is None:
+                break
 
     await get_posts_by_user_wall(client, access_token, UUID("5ee59a22-ae5a-49f9-9090-5a72e6285fad"))
 

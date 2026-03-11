@@ -1,3 +1,4 @@
+from typing import Literal
 from uuid import UUID
 from enum import Enum
 
@@ -42,13 +43,18 @@ class ReportTargetType(str, Enum):
     USER = 'user'
     """Пользователь"""
 
+    def __str__(self):
+        return self.value
+
 
 async def report(
         client: httpx.AsyncClient,
         access_token: str,
         target_id: UUID,
-        target_type: ReportTargetType = ReportTargetType.USER,
-        reason: Reason = Reason.OTHER,
+        target_type: ReportTargetType | Literal[
+            "spam", "violence", "hate", "adult", "misinfo", "other"
+        ] = ReportTargetType.USER,
+        reason: Reason | Literal["post", "comment", "user"] = Reason.OTHER,
         description: str = "",
         domain: str = "xn--d1ah4a.com",
         **kwargs
