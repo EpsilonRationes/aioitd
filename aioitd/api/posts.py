@@ -444,7 +444,7 @@ async def get_posts(
     return pagination, posts
 
 
-class ComemntSort(str, Enum):
+class CommentSort(str, Enum):
     POPULAR = 'popular'
     NEWEST = 'newest'
     OLDEST = 'oldest'
@@ -459,7 +459,7 @@ async def get_post_comments(
         post_id: UUID,
         cursor: str | None = None,
         limit: int = 20,
-        sort: ComemntSort | Literal["popular", "newest", "oldest"] = ComemntSort.NEWEST,
+        sort: CommentSort | Literal["popular", "newest", "oldest"] = CommentSort.NEWEST,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> tuple[TotalPagination, list[Comment]]:
@@ -698,5 +698,5 @@ async def repost(
 __all__ = [
     'get_post', 'delete_post', 'restore_post', 'like_post', 'unlike_post', 'view_post', 'pin_post', 'unpin_post',
     'get_posts_by_user', 'get_posts_by_user_liked', 'get_posts_by_user_wall', 'get_posts', 'get_post_comments', 'vote',
-    'create_post', 'update_post', 'repost', 'Tab', 'PostSort'
+    'create_post', 'update_post', 'repost', 'Tab', 'PostSort', 'CommentSort'
 ]

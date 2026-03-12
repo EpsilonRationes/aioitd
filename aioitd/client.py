@@ -8,7 +8,6 @@ from uuid import UUID
 
 from httpx import AsyncClient
 
-from aioitd.api.posts import ComemntSort
 from aioitd.models import *
 from aioitd.api import *
 from aioitd.fetch import is_token_expired, decode_jwt_payload
@@ -1185,7 +1184,7 @@ class AsyncITDClient:
             post_id: UUID,
             cursor: str | None = None,
             limit: int = 20,
-            sort: ComemntSort | Literal["popular", "newest", "oldest"] = ComemntSort.POPULAR,
+            sort: CommentSort | Literal["popular", "newest", "oldest"] = CommentSort.POPULAR,
             **kwargs
     ) -> tuple[TotalPagination, list[Comment]]:
         """Получить комментарии под постом.
