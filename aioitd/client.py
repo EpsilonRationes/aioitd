@@ -8,6 +8,7 @@ from uuid import UUID
 
 from httpx import AsyncClient
 
+from aioitd.api.posts import ComemntSort
 from aioitd.models import *
 from aioitd.api import *
 from aioitd.fetch import is_token_expired, decode_jwt_payload
@@ -389,8 +390,10 @@ class AsyncITDClient:
     async def report(
             self,
             target_id: UUID,
-            target_type: ReportTargetType = ReportTargetType.USER,
-            reason: Reason = Reason.OTHER,
+            target_type: ReportTargetType | Literal[
+                "spam", "violence", "hate", "adult", "misinfo", "other"
+            ] = ReportTargetType.USER,
+            reason: Reason | Literal["post", "comment", "user"] = Reason.OTHER,
             description: str = "",
             **kwargs
     ) -> Report:
@@ -1056,7 +1059,7 @@ class AsyncITDClient:
             username_or_id: str | UUID,
             cursor: str | None = None,
             limit: int = 20,
-            sort: Literal["new", "popular"] = "new",
+            sort: PostSort | Literal["new", "popular"] = PostSort.NEW,
             **kwargs
     ) -> tuple[Pagination, list[Post]]:
         """Посты на стене пользователя (включая его собственные).
@@ -1086,6 +1089,7 @@ class AsyncITDClient:
             self,
             username_or_id: str | UUID,
             cursor: str | None = None,
+            sort: PostSort | Literal["new", "popular"] = PostSort.NEW,
             limit: int = 20,
             **kwargs
     ) -> tuple[Pagination, list[Post]]:
@@ -1095,6 +1099,7 @@ class AsyncITDClient:
             username_or_id: имя пользователя или его UUID
             cursor: курсор следующей страницы
             limit: максимальное количество постов
+            sort: сортировка ("new" или "popular")
 
         Returns:
             Кортеж (пагинация, список постов)
@@ -1107,7 +1112,7 @@ class AsyncITDClient:
         """
         return await get_posts_by_user_liked(
             self.client, self._access_token, username_or_id, cursor, limit,
-            self.domain, timeout=self.timeout, **kwargs
+            sort, self.domain, timeout=self.timeout, **kwargs
         )
 
     @auth_required
@@ -1116,6 +1121,7 @@ class AsyncITDClient:
             username_or_id: str | UUID,
             cursor: str | None = None,
             limit: int = 20,
+            sort: PostSort | Literal["new", "popular"] = PostSort.NEW,
             **kwargs
     ) -> tuple[Pagination, list[Post]]:
         """Посты на стене пользователя, сделанные другими пользователями.
@@ -1124,6 +1130,7 @@ class AsyncITDClient:
             username_or_id: имя пользователя или его UUID
             cursor: курсор следующей страницы
             limit: максимальное количество постов
+            sort: сортировка ("new" или "popular")
 
         Returns:
             Кортеж (пагинация, список постов)
@@ -1136,7 +1143,7 @@ class AsyncITDClient:
         """
         return await get_posts_by_user_wall(
             self.client, self._access_token, username_or_id, cursor, limit,
-            self.domain, timeout=self.timeout, **kwargs
+            sort, self.domain, timeout=self.timeout, **kwargs
         )
 
     @auth_required
@@ -1144,7 +1151,7 @@ class AsyncITDClient:
             self,
             cursor: str | None = None,
             limit: int = 20,
-            tab: Literal['popular', 'following', 'clan'] = 'popular',
+            tab: Tab | Literal['popular', 'following', 'clan'] = Tab.POPULAR,
             **kwargs
     ) -> tuple[Pagination, list[Post]]:
         """Лента постов.
@@ -1171,8 +1178,8 @@ class AsyncITDClient:
             self,
             post_id: UUID,
             cursor: str | None = None,
-            sort: Literal["popular", "newest", "oldest"] = "popular",
             limit: int = 20,
+            sort: ComemntSort | Literal["popular", "newest", "oldest"] = ComemntSort.POPULAR,
             **kwargs
     ) -> tuple[TotalPagination, list[Comment]]:
         """Получить комментарии под постом.
@@ -1192,7 +1199,7 @@ class AsyncITDClient:
             ParamsValidationError: 1 <= limit <= 500
         """
         return await get_post_comments(
-            self.client, self._access_token, post_id, cursor, sort, limit,
+            self.client, self._access_token, post_id, cursor, limit, sort,
             self.domain, timeout=self.timeout, **kwargs
         )
 

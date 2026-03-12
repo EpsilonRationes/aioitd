@@ -458,8 +458,8 @@ async def get_post_comments(
         access_token: str,
         post_id: UUID,
         cursor: str | None = None,
-        sort: Literal["popular", "newest", "oldest"] = ComemntSort.NEWEST,
         limit: int = 20,
+        sort: ComemntSort | Literal["popular", "newest", "oldest"] = ComemntSort.NEWEST,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> tuple[TotalPagination, list[Comment]]:
@@ -470,8 +470,8 @@ async def get_post_comments(
         access_token: access токен
         post_id: UUID поста
         cursor: next_cursor с предыдущей страницы
-        sort: сортировать по
         limit: максимальное количество комментариев на странице
+        sort: сортировать по
         domain: домен
 
     Raises:
