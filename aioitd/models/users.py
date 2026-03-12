@@ -13,7 +13,7 @@ class Visibility(str, Enum):
     NOBODY = 'nobody'
 
     def __str__(self):
-        return self.value()
+        return self.value
 
 
 class Privacy(ITDBaseModel):
@@ -55,7 +55,7 @@ class PinSlug(str, Enum):
     KIRILL67_202602_SURVIVOR = "kirill67_202602_survivor"
 
     def __str__(self):
-        return self.value()
+        return self.value
 
 
 class Pin(ITDBaseModel):

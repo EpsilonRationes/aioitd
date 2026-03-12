@@ -396,7 +396,7 @@ class Tab(str, Enum):
     CLAN = 'clan'
 
     def __str__(self):
-        return self.value()
+        return self.value
 
 
 async def get_posts(
