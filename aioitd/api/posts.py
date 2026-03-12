@@ -539,7 +539,7 @@ async def create_post(
         multiple_choice: bool = False,
         question: str | None = None,
         options: list[str] | None = None,
-        spans: list[Monospace | Strike | Underline | Bold | Italic | Spoiler | Link] = None,
+        spans: list[Monospace | Strike | Underline | Bold | Italic | Spoiler | Link] | None = None,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> Post:
@@ -618,6 +618,7 @@ async def update_post(
         access_token: str,
         post_id: UUID,
         content: str,
+        spans: list[Monospace | Strike | Underline | Bold | Italic | Spoiler | Link] | None = None,
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> UpdatePostResponse:
@@ -628,6 +629,7 @@ async def update_post(
         access_token: access токен
         post_id: UUID поста
         content: Новый текст поста
+        spans: форматированние текста
         domain: домен
 
     Raises:
@@ -637,11 +639,12 @@ async def update_post(
         ForbiddenError: Нет прав для редактирования этого поста
         EditWindowExpiredError: пост нельзя изменять спустя несколько дней
     """
-
+    if spans is None:
+        spans = []
     response = await put(
         client,
         f"https://{domain}/api/posts/{post_id}",
-        json={"content": content},
+        json={"content": content, 'spans': [span.model_dump() for span in spans]},
         headers={"authorization": add_bearer(access_token)},
         **kwargs
     )

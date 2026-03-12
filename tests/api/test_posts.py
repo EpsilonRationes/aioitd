@@ -7,6 +7,7 @@ from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsVali
     NotPinedError, UserBlockedError, VideoRequiresVerificationError, WallClosedError, Link, Monospace, Strike, \
     Underline, Bold, Italic, Spoiler, Mention, HashTagSpan, EditWindowExpiredError
 from aioitd.api import PostSort
+from aioitd.parser import parse
 
 from tests.api import client, access_token
 
@@ -279,6 +280,7 @@ async def test_update_post(client, access_token):
 
     post = await create_post(client, access_token, 'for_test')
     await update_post(client, access_token, post.id, '1' * 1000)
+    await update_post(client, access_token, post.id, **parse("testwith*spans*"))
     await delete_post(client, access_token, post.id)
 
 
