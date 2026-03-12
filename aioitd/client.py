@@ -491,8 +491,12 @@ class AsyncITDClient:
         )
 
     @auth_required
-    async def get_me(self, **kwargs) -> FullMe:
+    async def get_me(self, **kwargs) -> FullMe | DeletedMe:
         """Получить текущего пользователя.
+
+        Returns:
+            FullMe: данные пользователя
+            DeletedMe: при удалённом аккаунте
 
         Raises:
             UnauthorizedError: ошибка авторизации
@@ -859,7 +863,8 @@ class AsyncITDClient:
 
     @auth_required
     async def delete_account(self, **kwargs) -> datetime:
-        """Удалить аккаунт
+        """Удалить аккаунт. После удаления аккаунта все остальные эндпоинт, требущие авторизации будут выбрасывать
+        AccountDeletedError, кроме get_me и get_me_uuid
 
         Raises:
             UnauthorizedError: неверный access токен
@@ -871,10 +876,11 @@ class AsyncITDClient:
         return await delete_account(self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs)
 
     async def restore_account(self, **kwargs) -> bool:
-        """Удалить аккаунт
+        """Восстановать аккаунт
 
         Raises:
             UnauthorizedError: неверный access токен
+            NotDeletedError: аккаунт не удалён
 
         Returns:
             Успешна ли операция

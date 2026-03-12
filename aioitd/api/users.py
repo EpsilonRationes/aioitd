@@ -4,7 +4,7 @@ from uuid import UUID
 
 import httpx
 
-from aioitd import datetime_from_itd_format
+from aioitd import datetime_from_itd_format, DeletedMe
 from aioitd.fetch import get, add_bearer, post, delete, put
 from aioitd.models.users import BlockedAuthor, FullUser, UserBlockedByMe, Me, PinWithDate, UserBlockMe, PrivateUser, \
     FullMe, \
@@ -49,13 +49,22 @@ async def get_user(
         return FullUser(**data)
 
 
-async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn--d1ah4a.com", **kwargs) -> FullMe:
+async def get_me(
+        client: httpx.AsyncClient,
+        access_token: str,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> FullMe | DeletedMe:
     """Получить текущего пользователя.
 
     Args:
         client: httpx.AsyncClient
         access_token: access токен
         domain: домен
+
+    Returns:
+        FullMe: данные пользователя
+        DeletedMe: при удалённом аккаунте
 
     Raises:
         UnauthorizedError: ошибка авторизации
@@ -67,9 +76,12 @@ async def get_me(client: httpx.AsyncClient, access_token: str, domain: str = "xn
         **kwargs
     )
     data = response.json()
-    data['isFollowedBy'] = False
-    data['isFollowing'] = False
-    return FullMe(**data)
+    if 'isDeleted' in data:
+        return DeletedMe(**data)
+    else:
+        data['isFollowedBy'] = False
+        data['isFollowing'] = False
+        return FullMe(**data)
 
 
 async def follow(
@@ -691,7 +703,8 @@ async def delete_account(
         domain: str = "xn--d1ah4a.com",
         **kwargs
 ) -> datetime:
-    """Удалить аккаунт
+    """Удалить аккаунт. После удаления аккаунта все остальные эндпоинт, требущие авторизации будут выбрасывать
+    AccountDeletedError, кроме get_me.
 
     Args:
         client: httpx.AsyncClient
@@ -700,6 +713,7 @@ async def delete_account(
 
     Raises:
         UnauthorizedError: неверный access токен
+        AlreadyDeletedError: аккаунт уже удалён
 
     Returns:
         Время, до которого можно восстановить аккаунт
@@ -730,6 +744,7 @@ async def restore_account(
 
     Raises:
         UnauthorizedError: неверный access токен
+        NotDeletedError: аккаунт не удалён
 
     Returns:
         Успешна ли операция

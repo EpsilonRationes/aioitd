@@ -39,7 +39,10 @@ class ITDError(Exception):
         'You can only use your own files as banner': 'На баннер можно поставить только свой файл',
         'Banner file not found': 'Файл для баннера не найден',
         'Username is already taken': 'Имя пользователя уже занято',
-        "Wall recipient not found": 'Пользователь не найден'
+        "Wall recipient not found": 'Пользователь не найден',
+        'Account is already deleted': 'Аккаунт уже удалён',
+        'Your account has been deleted. You can restore it within 30 days.': "Ваш аккаунт удалён, вы может восстановить его в течении 30 денй",
+        'Account is not deleted': 'Аккаунт удалён'
     }
 
     def __init__(self, code: str, message: str):
@@ -176,6 +179,19 @@ class WallClosedError(ITDError):
 class EditWindowExpiredError(ITDError):
     code = "EDIT_WINDOW_EXPIRED"
 
+
+class AlreadyDeletedError(ITDError):
+    code = "ALREADY_DELETED"
+
+
+class AccountDeletedError(ITDError):
+    code = "ACCOUNT_DELETED"
+
+
+class NotDeletedError(ITDError):
+    code = "NOT_DELETED"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -201,7 +217,10 @@ itd_exceptions = [
     UsernameTakenError,
     VideoRequiresVerificationError,
     WallClosedError,
-    EditWindowExpiredError
+    EditWindowExpiredError,
+    AlreadyDeletedError,
+    AccountDeletedError,
+    NotDeletedError
 ]
 
 itd_codes = {}

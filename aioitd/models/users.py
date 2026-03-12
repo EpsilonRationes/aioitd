@@ -154,9 +154,15 @@ class PrivateUser(LastSeenMixin):
     is_private: Annotated[bool, Field(alias="isPrivate")]
 
 
+class DeletedMe(ITDBaseModel):
+    can_restore: Annotated[bool, Field(alias="canRestore")]
+    is_deleted: Annotated[bool, Field(alias='isDeleted')]
+    restore_deadline: Annotated[ITDDatetime, Field(alias="restoreDeadline")]
+
+
 __all__ = [
     'BaseFullUser', 'BlockedAuthor', 'Clan', 'FullMe', 'FullUser', 'LastSeen', 'LastSeenMixin', 'Me', 'Pin', 'PinSlug',
     'PinWithDate', 'Privacy', 'PrivateUser', 'Profile', 'User', 'UserBlockedByMe', 'UserBlockMe', 'UserStab',
     'UserWithAvatar', 'UserWithFollowersCount', 'UserWithFollowing', 'UserWithPin', 'UserWithRoles', 'UserWithVerified',
-    'Visibility', 'LastSeenUnit'
+    'Visibility', 'LastSeenUnit', 'DeletedMe'
 ]
