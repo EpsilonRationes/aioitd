@@ -5,6 +5,7 @@ from typing import IO, Any, TypeVar, ParamSpec, Callable, Awaitable, Literal, As
     AsyncGenerator
 import asyncio
 from uuid import UUID
+import re
 
 from httpx import AsyncClient
 
@@ -14,6 +15,44 @@ from aioitd.fetch import is_token_expired, decode_jwt_payload
 
 P = ParamSpec("P")
 T = TypeVar("T")
+
+
+def validate_username(username: str | None) -> str:
+    if username is None:
+        raise ValueError("username не может быть None")
+    if not (3 <= len(username) <= 50):
+        raise ValueError(f"Длина юзернейма от 3 до 50, получено {len(username)}: {username!r}")
+    if not re.fullmatch(r'[A-Za-z0-9_]+', username):  # + вместо * (хотя бы один символ)
+        raise ValueError(
+            f"Юзернейм может содержать только латинские буквы, цифры и _, получено: {username!r}"
+        )
+    return username
+
+
+def validate_uuid(uuid: str | UUID) -> UUID:
+    if isinstance(uuid, UUID):
+        return uuid
+    try:
+        return UUID(uuid)
+    except ValueError:
+        raise ValueError(f'Неверный формат uuid: "{uuid}"')
+
+
+def validate_username_or_uuid(username_or_uuid: str | None) -> UUID | str:
+    if username_or_uuid is None:
+        validate_username(username_or_uuid)
+    try:
+        return validate_uuid(username_or_uuid)
+    except ValueError:
+        pass
+
+    return validate_username(username_or_uuid)
+
+
+def validate_limit(min: int, max: int, limit: int) -> int:
+    if not (min <= limit <= max):
+        raise ValueError(f'Лимит должен быть от {min} до {max}, передан {limit}')
+    return limit
 
 
 class AsyncITDClient:
@@ -159,29 +198,27 @@ class AsyncITDClient:
 
         Args:
             query: текст запроса
-            limit: максимальное количество выданных хештегов
+            limit: максимальное количество выданных хештегов (1 <= limit <= 100)
 
         Returns:
             Список найденных хештегов
 
         Raises:
-            ParamsValidationError: 1 <= limit <= 100
             ParamsValidationError: len(query) <= 100
         """
+        limit = validate_limit(1, 100, limit)
         return await search_hashtags(self.client, query, limit, self.domain, timeout=self.timeout, **kwargs)
 
     async def get_trending_hashtags(self, limit: int = 10, **kwargs) -> list[Hashtag]:
         """Получить самые популярные хештеги.
 
         Args:
-            limit: максимальное количество выданных хештегов
+            limit: максимальное количество выданных хештегов (1 <= limit <= 50)
 
         Returns:
             Список самых популярных хештегов
-
-        Raises:
-            ParamsValidationError: 1 <= limit <= 50
         """
+        limit = validate_limit(1, 50, limit)
         return await get_trending_hashtags(self.client, limit, self.domain, timeout=self.timeout, **kwargs)
 
     async def get_posts_by_hashtag(
@@ -196,15 +233,15 @@ class AsyncITDClient:
         Args:
             hashtag_name: текст хештега
             cursor: next_cursor предыдущей страницы
-            limit: максимальное количество выданных постов
+            limit: максимальное количество выданных постов (1 <= limit <= 50)
 
         Returns:
             хештег, пагинация, список из постов и их комментариев
 
         Raises:
             NotFoundError: Хештег не найден
-            ParamsValidationError: 1 <= limit <= 50
         """
+        limit = validate_limit(1, 50, limit)
         return await get_posts_by_hashtag(
             self.client, hashtag_name, cursor, limit, self.domain, timeout=self.timeout, **kwargs
         )
@@ -215,7 +252,7 @@ class AsyncITDClient:
 
         Args:
             offset: сдвиг
-            limit: максимально количество уведомлений в ответе, любое число
+            limit: максимально количество уведомлений в ответе
 
         Returns:
             bool есть ли ещё уведомления, list[Notification] список уведомлений
@@ -229,11 +266,11 @@ class AsyncITDClient:
         )
 
     @auth_required
-    async def read_batch_notifications(self, notifications_ids: list[UUID], **kwargs) -> int:
+    async def read_batch_notifications(self, notifications_ids: list[UUID | str], **kwargs) -> int:
         """Пометить прочитанными несколько уведомлений.
 
         Args:
-            notifications_ids: список UUID уведомлений
+            notifications_ids: список UUID уведомлений (можно передавать как UUID, так и строки)
 
         Raises:
             UnauthorizedError: ошибка авторизации
@@ -242,31 +279,33 @@ class AsyncITDClient:
         Returns: 
             Количество прочитанных уведомлений
         """
-        return await self.read_batch_notifications(
+        notifications_ids = [validate_uuid(x) for x in notifications_ids]
+        return await read_batch_notifications(
             self.client, self._access_token, notifications_ids, self.domain, timeout=self.timeout, **kwargs
         )
 
     @auth_required
-    async def read_notification(self, notification_id: UUID, **kwargs) -> bool:
+    async def read_notification(self, notification_id: UUID | str, **kwargs) -> bool:
         """Пометить сообщение прочитанным.
-        
+
         Args:
-            notification_id: UUID уведомления
+            notification_id: UUID уведомления (можно передавать как UUID, так и строку)
 
         Returns:
             Успешна ли операция
-            
+
         Raises:
             UnauthorizedError: ошибка авторизации
 
         """
+        notification_id = validate_uuid(notification_id)
         return await read_notification(self.client, self._access_token, notification_id, self.domain,
                                        timeout=self.timeout, **kwargs)
 
     @auth_required
     async def get_notifications_count(self, **kwargs) -> int:
         """Получить количество непрочитанных уведомлений.
-        
+
         Raises:
             UnauthorizedError: ошибка авторизации
 
@@ -335,12 +374,12 @@ class AsyncITDClient:
                                                   sound, likes, wall_posts, self.domain, timeout=self.timeout, **kwargs)
 
     @auth_required
-    async def get_file(self, file_id: UUID, **kwargs) -> GetFile:
+    async def get_file(self, file_id: UUID | str, **kwargs) -> GetFile:
         """Получить файл.
-        
+
         Args:
-            file_id: UUID файла
-        
+            file_id: UUID файла (можно передавать как UUID, так и строку)
+
         Returns:
             Файл с датой создания
 
@@ -348,6 +387,7 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
 
         """
+        file_id = validate_uuid(file_id)
         return await get_file(self.client, self._access_token, file_id, self.domain, timeout=self.timeout, **kwargs)
 
     @auth_required
@@ -373,22 +413,23 @@ class AsyncITDClient:
         )
 
     @auth_required
-    async def delete_file(self, file_id: UUID, **kwargs) -> None:
+    async def delete_file(self, file_id: UUID | str, **kwargs) -> None:
         """Удалить файл.
 
         Args:
-            file_id: UUID файла
+            file_id: UUID файла (можно передавать как UUID, так и строку)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Файл не найден, или нет прав доступа к нему
         """
+        file_id = validate_uuid(file_id)
         return await delete_file(self.client, self._access_token, file_id, self.domain, timeout=self.timeout, **kwargs)
 
     @auth_required
     async def report(
             self,
-            target_id: UUID,
+            target_id: UUID | str,
             target_type: ReportTargetType | Literal[
                 "spam", "violence", "hate", "adult", "misinfo", "other"
             ] = ReportTargetType.USER,
@@ -397,9 +438,9 @@ class AsyncITDClient:
             **kwargs
     ) -> Report:
         """Пожаловаться
-        
+
         Args:
-            target_id: UUID цели
+            target_id: UUID цели (можно передавать как UUID, так и строку)
             target_type: тип цели
             reason: причина
             description: текст репорта
@@ -413,6 +454,7 @@ class AsyncITDClient:
             ValidationError: нельзя отправить жалобу на один и тот же контент
             PramsValidationError: len(description) <= 1000
         """
+        target_id = validate_uuid(target_id)
         return await report(
             self.client, self._access_token, target_id, target_type, reason, description, self.domain,
             timeout=self.timeout, **kwargs
@@ -429,16 +471,16 @@ class AsyncITDClient:
 
         Args:
             query: запрос
-            user_limit: максимальное количество выданных пользователей
-            hashtag_limit: максимальное количество выданных хештегов
+            user_limit: максимальное количество выданных пользователей (1 <= user_limit <= 20)
+            hashtag_limit: максимальное количество выданных хештегов (1 <= hashtag_limit <= 20)
 
         Returns:
             найденные хештеги, найденные пользователи
-
-        Raises:
-            ParamsValidationError: 1 <= user_limit <= 20
-            ParamsValidationError: 1 <= hashtag_limit <= 20
         """
+        if user_limit is not None:
+            user_limit = validate_limit(1, 20, user_limit)
+        if hashtag_limit is not None:
+            hashtag_limit = validate_limit(1, 20, hashtag_limit)
         return await search(
             self.client, query, user_limit, hashtag_limit, self.domain, timeout=self.timeout, **kwargs
         )
@@ -446,10 +488,10 @@ class AsyncITDClient:
     @auth_required
     async def get_verification_status(self, **kwargs) -> str:
         """Получить статус верификации
-        
+
         Returns:
             Статус верификации
-            
+
         Raises:
             UnauthorizedError: ошибка авторизации
 
@@ -459,7 +501,7 @@ class AsyncITDClient:
     @auth_required
     async def submit_verification(self, video_url: str, **kwargs) -> dict:
         """Подать запрос на галочку
-        
+
         Args:
             video_url: url видео, загруженного на itd
 
@@ -485,6 +527,7 @@ class AsyncITDClient:
             NotFoundError: пользователь не найден
             UserBlockedError: пользователь заблокирован
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
         return await get_user(
             self.client, self._access_token, username_or_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -525,6 +568,7 @@ class AsyncITDClient:
         Returns: 
             Количество подписчиков пользователя
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
         return await follow(
             self.client, self._access_token, username_or_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -547,6 +591,7 @@ class AsyncITDClient:
         Returns: 
             Количество подписчиков пользователя
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
         return await unfollow(
             self.client, self._access_token, username_or_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -564,15 +609,16 @@ class AsyncITDClient:
         Args:
             username_or_id: имя пользователя или его UUID
             page: страница
-            limit: максимальное количество пользователей на странице
+            limit: максимальное количество пользователей на странице (1 <= limit <= 100)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Пользователь не найден
-            ParamsValidationError: 1 <= limit <= 100
             ParamsValidationError: page >= 1
             UserBlockedError: пользователь заблокирован
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
+        limit = validate_limit(1, 100, limit)
         return await get_followers(
             self.client, self._access_token, username_or_id, page, limit, self.domain, timeout=self.timeout, **kwargs
         )
@@ -590,15 +636,16 @@ class AsyncITDClient:
         Args:
             username_or_id: имя пользователя или его UUID
             page: страница
-            limit: максимальное количество пользователей на странице
+            limit: максимальное количество пользователей на странице (1 <= limit <= 100)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Пользователь не найден
-            ParamsValidationError: 1 <= limit <= 100
             ParamsValidationError: page >= 1
             UserBlockedError: пользователь заблокирован
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
+        limit = validate_limit(1, 100, limit)
         return await get_following(
             self.client, self._access_token, username_or_id, page, limit, self.domain, timeout=self.timeout, **kwargs
         )
@@ -636,12 +683,12 @@ class AsyncITDClient:
 
         Args:
             query: текст запроса
-            limit: максимальное количество выданных пользователей
+            limit: максимальное количество выданных пользователей (1 <= limit <= 50)
 
         Raises:
             UnauthorizedError: ошибка авторизации
-            ValidationError: 1 <= limit <= 50
         """
+        limit = validate_limit(1, 50, limit)
         return await search_users(
             self.client, self._access_token, query, limit, self.domain, timeout=self.timeout, **kwargs
         )
@@ -744,7 +791,7 @@ class AsyncITDClient:
             bio: str | None = None,
             display_name: str | None = None,
             username: str | None = None,
-            banner_id: UUID | None = None,
+            banner_id: UUID | str | None = None,
             **kwargs
     ) -> Me:
         """Обновить профиль.
@@ -753,7 +800,7 @@ class AsyncITDClient:
             bio: о себе
             display_name: имя
             username: имя пользователя
-            banner_id: UUID файла нового баннера
+            banner_id: UUID файла нового баннера (можно передавать как UUID, так и строку)
 
         Raises:
             UnauthorizedError: неверный access токен
@@ -764,6 +811,8 @@ class AsyncITDClient:
             ValidationError: Баннер может быть только изображением
             UsernameTakenError: Имя пользователя уже занято
         """
+        if banner_id is not None:
+            banner_id = validate_uuid(banner_id)
         return await update_profile(
             self.client, self._access_token, bio, display_name, username, banner_id,
             self.domain, timeout=self.timeout, **kwargs
@@ -795,6 +844,7 @@ class AsyncITDClient:
             ConflictError: пользователь уже заблокирован
             ValidationError: нельзя заблокировать себя
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
         await block(
             self.client, self._access_token, username_or_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -815,6 +865,7 @@ class AsyncITDClient:
             NotFoundError: пользователь не найден
             ConflictError: пользователь не заблокирован
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
         await unblock(
             self.client, self._access_token, username_or_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -830,13 +881,13 @@ class AsyncITDClient:
 
         Args:
             page: страница
-            limit: максимальное количество пользователей на странице
+            limit: максимальное количество пользователей на странице (1 <= limit <= 100)
 
         Raises:
             UnauthorizedError: неверный access токен
-            ParamsValidationError: 1 <= limit <= 100
             ParamsValidationError: page >= 1
         """
+        limit = validate_limit(1, 100, limit)
         return await get_blocked(
             self.client, self._access_token, page, limit, self.domain, timeout=self.timeout, **kwargs
         )
@@ -844,18 +895,19 @@ class AsyncITDClient:
     @auth_required
     async def get_follow_status(
             self,
-            user_ids: list[UUID],
+            user_ids: list[UUID | str],
             **kwargs
     ) -> dict[UUID, bool]:
         """Подписаны ли вы на пользователей.
 
         Args:
-            user_ids: список UUID пользователей
+            user_ids: список UUID пользователей (можно передавать как UUID, так и строки)
 
         Raises:
             UnauthorizedError: неверный access токен
             ParamsValidationError: len(user_ids) <= 20
         """
+        user_ids = [validate_uuid(uid) for uid in user_ids]
         return await get_follow_status(
             self.client, self._access_token, user_ids, self.domain, timeout=self.timeout, **kwargs
         )
@@ -890,13 +942,13 @@ class AsyncITDClient:
     @auth_required
     async def get_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> tuple[list[Comment], Post]:
         """Получить пост.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Returns:
             Кортеж (список комментариев, пост)
@@ -907,6 +959,7 @@ class AsyncITDClient:
                 пост не существует, удалён, владелец поста забанил, пост принадлежит пользователю с is_private=True,
                 на которого вы не подписаны
         """
+        post_id = validate_uuid(post_id)
         return await get_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -914,19 +967,20 @@ class AsyncITDClient:
     @auth_required
     async def delete_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> None:
         """Удалить пост.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             ForbiddenError: Нет прав для удаления поста
             NotFoundError: Пост не найден
         """
+        post_id = validate_uuid(post_id)
         await delete_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -934,19 +988,20 @@ class AsyncITDClient:
     @auth_required
     async def restore_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> None:
         """Восстановить пост.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             ForbiddenError: Нет прав для восстановления поста
             NotFoundError: Пост не найден
         """
+        post_id = validate_uuid(post_id)
         await restore_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -954,13 +1009,13 @@ class AsyncITDClient:
     @auth_required
     async def like_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> int:
         """Лайкнуть пост.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Returns:
             Новое количество лайков
@@ -969,6 +1024,7 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Пост не найден
         """
+        post_id = validate_uuid(post_id)
         return await like_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -976,13 +1032,13 @@ class AsyncITDClient:
     @auth_required
     async def unlike_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> int:
         """Убрать лайк с поста.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Returns:
             Новое количество лайков
@@ -991,6 +1047,7 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Пост не найден
         """
+        post_id = validate_uuid(post_id)
         return await unlike_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -998,17 +1055,18 @@ class AsyncITDClient:
     @auth_required
     async def view_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> None:
         """Зафиксировать просмотр поста.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Raises:
             UnauthorizedError: ошибка авторизации
         """
+        post_id = validate_uuid(post_id)
         await view_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -1016,13 +1074,13 @@ class AsyncITDClient:
     @auth_required
     async def pin_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> bool:
         """Закрепить пост на своей стене.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Returns:
             Успешность операции
@@ -1032,6 +1090,7 @@ class AsyncITDClient:
             NotFoundError: Пост не найден
             ForbiddenError: Можно прикреплять посты только на своей стене
         """
+        post_id = validate_uuid(post_id)
         return await pin_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -1039,13 +1098,13 @@ class AsyncITDClient:
     @auth_required
     async def unpin_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             **kwargs
     ) -> bool:
         """Открепить пост со своей стены.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
 
         Returns:
             Успешность операции
@@ -1054,6 +1113,7 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             NotPinedError: Пост не прикреплён
         """
+        post_id = validate_uuid(post_id)
         return await unpin_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
@@ -1072,7 +1132,7 @@ class AsyncITDClient:
         Args:
             username_or_id: имя пользователя или его UUID
             cursor: курсор следующей страницы (из предыдущего ответа)
-            limit: максимальное количество постов
+            limit: максимальное количество постов (1 <= limit <= 50)
             sort: сортировка ("new" или "popular")
 
         Returns:
@@ -1081,9 +1141,10 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: пользователь не найден
-            ValidationError: 1 <= limit <= 50
             UserBlockedError: пользователь заблокирован
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
+        limit = validate_limit(1, 50, limit)
         return await get_posts_by_user(
             self.client, self._access_token, username_or_id, cursor, limit, sort,
             self.domain, timeout=self.timeout, **kwargs
@@ -1103,7 +1164,7 @@ class AsyncITDClient:
         Args:
             username_or_id: имя пользователя или его UUID
             cursor: курсор следующей страницы
-            limit: максимальное количество постов
+            limit: максимальное количество постов (1 <= limit <= 50)
             sort: сортировка ("new" или "popular")
 
         Returns:
@@ -1112,9 +1173,10 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: пользователь не найден
-            ValidationError: 1 <= limit <= 50
             UserBlockedError: пользователь заблокирован
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
+        limit = validate_limit(1, 50, limit)
         return await get_posts_by_user_liked(
             self.client, self._access_token, username_or_id, cursor, limit,
             sort, self.domain, timeout=self.timeout, **kwargs
@@ -1134,7 +1196,7 @@ class AsyncITDClient:
         Args:
             username_or_id: имя пользователя или его UUID
             cursor: курсор следующей страницы
-            limit: максимальное количество постов
+            limit: максимальное количество постов (1 <= limit <= 50)
             sort: сортировка ("new" или "popular")
 
         Returns:
@@ -1143,9 +1205,10 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: пользователь не найден
-            ValidationError: 1 <= limit <= 50
             UserBlockedError: пользователь заблокирован
         """
+        username_or_id = validate_username_or_uuid(username_or_id)
+        limit = validate_limit(1, 50, limit)
         return await get_posts_by_user_wall(
             self.client, self._access_token, username_or_id, cursor, limit,
             sort, self.domain, timeout=self.timeout, **kwargs
@@ -1163,7 +1226,7 @@ class AsyncITDClient:
 
         Args:
             cursor: курсор следующей страницы
-            limit: максимальное количество постов
+            limit: максимальное количество постов (1 <= limit <= 50)
             tab: вкладка ("popular", "following", "clan")
 
         Returns:
@@ -1171,8 +1234,8 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: ошибка авторизации
-            ValidationError: 1 <= limit <= 50
         """
+        limit = validate_limit(1, 50, limit)
         return await get_posts(
             self.client, self._access_token, cursor, limit, tab,
             self.domain, timeout=self.timeout, **kwargs
@@ -1181,7 +1244,7 @@ class AsyncITDClient:
     @auth_required
     async def get_post_comments(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             cursor: str | None = None,
             limit: int = 20,
             sort: CommentSort | Literal["popular", "newest", "oldest"] = CommentSort.POPULAR,
@@ -1190,10 +1253,10 @@ class AsyncITDClient:
         """Получить комментарии под постом.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
             cursor: курсор следующей страницы
             sort: сортировка ("popular", "newest", "oldest")
-            limit: максимальное количество комментариев
+            limit: максимальное количество комментариев (1 <= limit <= 500)
 
         Returns:
             Кортеж (пагинация с общим количеством, список комментариев)
@@ -1201,8 +1264,9 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Пост не найден
-            ParamsValidationError: 1 <= limit <= 500
         """
+        post_id = validate_uuid(post_id)
+        limit = validate_limit(1, 500, limit)
         return await get_post_comments(
             self.client, self._access_token, post_id, cursor, limit, sort,
             self.domain, timeout=self.timeout, **kwargs
@@ -1211,15 +1275,15 @@ class AsyncITDClient:
     @auth_required
     async def vote_poll(
             self,
-            post_id: UUID,
-            option_ids: list[UUID],
+            post_id: UUID | str,
+            option_ids: list[UUID | str],
             **kwargs
     ) -> Poll:
         """Проголосовать в опросе.
 
         Args:
-            post_id: UUID поста
-            option_ids: список UUID выбранных вариантов
+            post_id: UUID поста (можно передавать как UUID, так и строку)
+            option_ids: список UUID выбранных вариантов (можно передавать как UUID, так и строки)
 
         Returns:
             Обновлённый опрос
@@ -1231,6 +1295,8 @@ class AsyncITDClient:
             ValidationError: В этом опросе можно выбрать только один вариант
             ValidationError: len(option_ids) > 0
         """
+        post_id = validate_uuid(post_id)
+        option_ids = [validate_uuid(oid) for oid in option_ids]
         return await vote(
             self.client, self._access_token, post_id, option_ids,
             self.domain, timeout=self.timeout, **kwargs
@@ -1240,8 +1306,8 @@ class AsyncITDClient:
     async def create_post(
             self,
             content: str = '',
-            attachment_ids: list[UUID] | None = None,
-            wall_recipient_id: UUID | None = None,
+            attachment_ids: list[UUID | str] | None = None,
+            wall_recipient_id: UUID | str | None = None,
             multiple_choice: bool = False,
             question: str | None = None,
             options: list[str] | None = None,
@@ -1252,7 +1318,7 @@ class AsyncITDClient:
 
         Args:
             content: Текст поста
-            attachment_ids: Прикреплённые файлы
+            attachment_ids: Прикреплённые файлы (список UUID, можно передавать строки)
             wall_recipient_id: ID пользователя, на чью стену публикуется пост (если не указан, пост идёт на свою стену)
             multiple_choice: Возможен ли множественный выбор в опросе
             question: Заголовок опроса
@@ -1274,6 +1340,10 @@ class AsyncITDClient:
             ValidationError: 2 <= len(options) <= 10
             ValidationError: 1 <= len(options[i]) <= 32
         """
+        if attachment_ids is not None:
+            attachment_ids = [validate_uuid(aid) for aid in attachment_ids]
+        if wall_recipient_id is not None:
+            wall_recipient_id = validate_uuid(wall_recipient_id)
         return await create_post(
             self.client, self._access_token, content, attachment_ids, wall_recipient_id,
             multiple_choice, question, options, spans,
@@ -1283,14 +1353,14 @@ class AsyncITDClient:
     @auth_required
     async def update_post(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             content: str,
             **kwargs
     ) -> UpdatePostResponse:
         """Изменить текст поста.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
             content: Новый текст поста
 
         Returns:
@@ -1303,6 +1373,7 @@ class AsyncITDClient:
             ForbiddenError: Нет прав для редактирования этого поста
             EditWindowExpiredError: пост нельзя изменять спустя несколько дней
         """
+        post_id = validate_uuid(post_id)
         return await update_post(
             self.client, self._access_token, post_id, content,
             self.domain, timeout=self.timeout, **kwargs
@@ -1311,14 +1382,14 @@ class AsyncITDClient:
     @auth_required
     async def repost(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             content: str = "",
             **kwargs
     ) -> Post:
         """Сделать репост.
 
         Args:
-            post_id: UUID оригинального поста
+            post_id: UUID оригинального поста (можно передавать как UUID, так и строку)
             content: Текст репоста (необязательно)
 
         Returns:
@@ -1331,6 +1402,7 @@ class AsyncITDClient:
             ValidationError: Нельзя репостить свои посты
             ValidationError: len(content) <= 1_000
         """
+        post_id = validate_uuid(post_id)
         return await repost(
             self.client, self._access_token, post_id, content,
             self.domain, timeout=self.timeout, **kwargs
@@ -1339,15 +1411,15 @@ class AsyncITDClient:
     @auth_required
     async def comment(
             self,
-            post_id: UUID,
+            post_id: UUID | str,
             content: str = "",
-            attachment_ids: list[UUID] | None = None,
+            attachment_ids: list[UUID | str] | None = None,
             **kwargs
     ) -> Comment:
         """Создать комментарий к посту.
 
         Args:
-            post_id: UUID поста
+            post_id: UUID поста (можно передавать как UUID, так и строку)
             content: текст комментария
             attachment_ids: список UUID прикреплённых файлов (максимум 4)
 
@@ -1362,6 +1434,9 @@ class AsyncITDClient:
             ParamsValidationError: len(attachment_ids) <= 4
             ParamsValidationError: len(content) <= 1_000
         """
+        post_id = validate_uuid(post_id)
+        if attachment_ids is not None:
+            attachment_ids = [validate_uuid(aid) for aid in attachment_ids]
         return await comment(
             self.client, self._access_token, post_id, content, attachment_ids,
             self.domain, timeout=self.timeout, **kwargs
@@ -1370,16 +1445,16 @@ class AsyncITDClient:
     @auth_required
     async def replies(
             self,
-            comment_id: UUID,
+            comment_id: UUID | str,
             content: str = "",
-            replay_to_user_id: UUID | None = None,
-            attachment_ids: list[UUID] | None = None,
+            replay_to_user_id: UUID | str | None = None,
+            attachment_ids: list[UUID | str] | None = None,
             **kwargs
     ) -> Reply:
         """Ответить на комментарий.
 
         Args:
-            comment_id: UUID комментария, на который отвечаем
+            comment_id: UUID комментария, на который отвечаем (можно передавать как UUID, так и строку)
             content: текст ответа
             replay_to_user_id: UUID пользователя, которому адресован ответ (для упоминания)
             attachment_ids: список UUID прикреплённых файлов (максимум 4)
@@ -1395,6 +1470,11 @@ class AsyncITDClient:
             ParamsValidationError: len(attachment_ids) <= 4
             ParamsValidationError: len(content) <= 1_000
         """
+        comment_id = validate_uuid(comment_id)
+        if replay_to_user_id is not None:
+            replay_to_user_id = validate_uuid(replay_to_user_id)
+        if attachment_ids is not None:
+            attachment_ids = [validate_uuid(aid) for aid in attachment_ids]
         return await replies(
             self.client, self._access_token, comment_id, content, replay_to_user_id, attachment_ids,
             self.domain, timeout=self.timeout, **kwargs
@@ -1403,14 +1483,14 @@ class AsyncITDClient:
     @auth_required
     async def edit_comment(
             self,
-            comment_id: UUID,
+            comment_id: UUID | str,
             content: str,
             **kwargs
     ) -> UpdateCommentResponse:
         """Редактировать комментарий.
 
         Args:
-            comment_id: UUID комментария
+            comment_id: UUID комментария (можно передавать как UUID, так и строку)
             content: новый текст комментария
 
         Returns:
@@ -1422,6 +1502,7 @@ class AsyncITDClient:
             ForbiddenError: нет прав на редактирование этого комментария
             ParamsValidationError: 1 <= len(content) <= 1_000
         """
+        comment_id = validate_uuid(comment_id)
         return await edit_comment(
             self.client, self._access_token, comment_id, content,
             self.domain, timeout=self.timeout, **kwargs
@@ -1430,19 +1511,20 @@ class AsyncITDClient:
     @auth_required
     async def delete_comment(
             self,
-            comment_id: UUID,
+            comment_id: UUID | str,
             **kwargs
     ) -> None:
         """Удалить комментарий.
 
         Args:
-            comment_id: UUID комментария
+            comment_id: UUID комментария (можно передавать как UUID, так и строку)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: комментарий не найден
             ForbiddenError: нет прав на удаление комментария
         """
+        comment_id = validate_uuid(comment_id)
         await delete_comment(
             self.client, self._access_token, comment_id,
             self.domain, timeout=self.timeout, **kwargs
@@ -1451,19 +1533,20 @@ class AsyncITDClient:
     @auth_required
     async def restore_comment(
             self,
-            comment_id: UUID,
+            comment_id: UUID | str,
             **kwargs
     ) -> None:
         """Восстановить удалённый комментарий.
 
         Args:
-            comment_id: UUID комментария
+            comment_id: UUID комментария (можно передавать как UUID, так и строку)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: комментарий не найден
             ForbiddenError: нет прав на восстановление комментария
         """
+        comment_id = validate_uuid(comment_id)
         await restore_comment(
             self.client, self._access_token, comment_id,
             self.domain, timeout=self.timeout, **kwargs
@@ -1472,13 +1555,13 @@ class AsyncITDClient:
     @auth_required
     async def like_comment(
             self,
-            comment_id: UUID,
+            comment_id: UUID | str,
             **kwargs
     ) -> int:
         """Поставить лайк на комментарий.
 
         Args:
-            comment_id: UUID комментария
+            comment_id: UUID комментария (можно передавать как UUID, так и строку)
 
         Returns:
             Обновлённое количество лайков
@@ -1487,6 +1570,7 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             NotFoundError: комментарий не найден
         """
+        comment_id = validate_uuid(comment_id)
         return await like_comment(
             self.client, self._access_token, comment_id,
             self.domain, timeout=self.timeout, **kwargs
@@ -1495,13 +1579,13 @@ class AsyncITDClient:
     @auth_required
     async def unlike_comment(
             self,
-            comment_id: UUID,
+            comment_id: UUID | str,
             **kwargs
     ) -> int:
         """Убрать лайк с комментария.
 
         Args:
-            comment_id: UUID комментария
+            comment_id: UUID комментария (можно передавать как UUID, так и строку)
 
         Returns:
             Обновлённое количество лайков
@@ -1510,6 +1594,7 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             NotFoundError: комментарий не найден
         """
+        comment_id = validate_uuid(comment_id)
         return await unlike_comment(
             self.client, self._access_token, comment_id,
             self.domain, timeout=self.timeout, **kwargs
