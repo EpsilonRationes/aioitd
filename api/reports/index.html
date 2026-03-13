@@ -1810,8 +1810,17 @@
     <span class="n">client</span><span class="p">:</span> <span class="n"><span title="httpx.AsyncClient">AsyncClient</span></span><span class="p">,</span>
     <span class="n">access_token</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
     <span class="n">target_id</span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span><span class="p">,</span>
-    <span class="n">target_type</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            ReportTargetType (aioitd.api.reports.ReportTargetType)" href="#aioitd.api.reports.ReportTargetType">ReportTargetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            USER (aioitd.api.reports.ReportTargetType.USER)" href="#aioitd.api.reports.ReportTargetType.USER">USER</a></span><span class="p">,</span>
-    <span class="n">reason</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reason (aioitd.api.reports.Reason)" href="#aioitd.api.reports.Reason">Reason</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            OTHER (aioitd.api.reports.Reason.OTHER)" href="#aioitd.api.reports.Reason.OTHER">OTHER</a></span><span class="p">,</span>
+    <span class="n">target_type</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            ReportTargetType (aioitd.api.reports.ReportTargetType)" href="#aioitd.api.reports.ReportTargetType">ReportTargetType</a></span>
+    <span class="o">|</span> <span class="n"><span title="typing.Literal">Literal</span></span><span class="p">[</span>
+        <span class="s2">&quot;spam&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;violence&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;hate&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;adult&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;misinfo&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;other&quot;</span><span class="p">,</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            USER (aioitd.api.reports.ReportTargetType.USER)" href="#aioitd.api.reports.ReportTargetType.USER">USER</a></span><span class="p">,</span>
+    <span class="n">reason</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reason (aioitd.api.reports.Reason)" href="#aioitd.api.reports.Reason">Reason</a></span>
+    <span class="o">|</span> <span class="n"><span title="typing.Literal">Literal</span></span><span class="p">[</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            OTHER (aioitd.api.reports.Reason.OTHER)" href="#aioitd.api.reports.Reason.OTHER">OTHER</a></span><span class="p">,</span>
     <span class="n">description</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="n">domain</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;xn--d1ah4a.com&quot;</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -1890,7 +1899,7 @@
               <p>
                   <span class="doc-param-annotation">
                     <b>TYPE:</b>
-                      <code><a class="autorefs autorefs-internal" title="            ReportTargetType (aioitd.api.reports.ReportTargetType)" href="#aioitd.api.reports.ReportTargetType">ReportTargetType</a></code>
+                      <code><a class="autorefs autorefs-internal" title="            ReportTargetType (aioitd.api.reports.ReportTargetType)" href="#aioitd.api.reports.ReportTargetType">ReportTargetType</a> | <span title="typing.Literal">Literal</span>[&#39;spam&#39;, &#39;violence&#39;, &#39;hate&#39;, &#39;adult&#39;, &#39;misinfo&#39;, &#39;other&#39;]</code>
                   </span>
                   <span class="doc-param-default">
                     <b>DEFAULT:</b>
@@ -1910,7 +1919,7 @@
               <p>
                   <span class="doc-param-annotation">
                     <b>TYPE:</b>
-                      <code><a class="autorefs autorefs-internal" title="            Reason (aioitd.api.reports.Reason)" href="#aioitd.api.reports.Reason">Reason</a></code>
+                      <code><a class="autorefs autorefs-internal" title="            Reason (aioitd.api.reports.Reason)" href="#aioitd.api.reports.Reason">Reason</a> | <span title="typing.Literal">Literal</span>[&#39;post&#39;, &#39;comment&#39;, &#39;user&#39;]</code>
                   </span>
                   <span class="doc-param-default">
                     <b>DEFAULT:</b>

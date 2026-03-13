@@ -1907,7 +1907,7 @@
     <span class="n">access_token</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
     <span class="n">domain</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;xn--d1ah4a.com&quot;</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FullMe (aioitd.models.users.FullMe)" href="../../models/users/#aioitd.models.users.FullMe">FullMe</a></span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FullMe (aioitd.models.users.FullMe)" href="../../models/users/#aioitd.models.users.FullMe">FullMe</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            DeletedMe (aioitd.DeletedMe)" href="../../models/users/#aioitd.models.users.DeletedMe">DeletedMe</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1973,6 +1973,50 @@
                       <code>&#39;xn--d1ah4a.com&#39;</code>
                   </span>
               </p>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<table>
+      <thead>
+        <tr>
+          <th><span class="doc-section-title">RETURNS</span></th>
+          <th><span>DESCRIPTION</span></th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>FullMe</code>
+            </td>
+            <td class="doc-returns-details">
+              <div class="doc-md-description">
+                <p>данные пользователя</p>
+              </div>
+                <p>
+                  <span class="doc-returns-annotation">
+                    <b>TYPE:</b>
+                      <code><a class="autorefs autorefs-internal" title="            FullMe (aioitd.models.users.FullMe)" href="../../models/users/#aioitd.models.users.FullMe">FullMe</a> | <a class="autorefs autorefs-internal" title="            DeletedMe (aioitd.DeletedMe)" href="../../models/users/#aioitd.models.users.DeletedMe">DeletedMe</a></code>
+                  </span>
+                </p>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>DeletedMe</code>
+            </td>
+            <td class="doc-returns-details">
+              <div class="doc-md-description">
+                <p>при удалённом аккаунте</p>
+              </div>
+                <p>
+                  <span class="doc-returns-annotation">
+                    <b>TYPE:</b>
+                      <code><a class="autorefs autorefs-internal" title="            FullMe (aioitd.models.users.FullMe)" href="../../models/users/#aioitd.models.users.FullMe">FullMe</a> | <a class="autorefs autorefs-internal" title="            DeletedMe (aioitd.DeletedMe)" href="../../models/users/#aioitd.models.users.DeletedMe">DeletedMe</a></code>
+                  </span>
+                </p>
             </td>
           </tr>
       </tbody>
@@ -5026,7 +5070,8 @@
 
     <div class="doc doc-contents ">
 
-        <p>Удалить аккаунт</p>
+        <p>Удалить аккаунт. После удаления аккаунта все остальные эндпоинт, требущие авторизации будут выбрасывать
+AccountDeletedError, кроме get_me.</p>
 
 
 <table>
@@ -5110,6 +5155,18 @@
             <td class="doc-raises-details">
               <div class="doc-md-description">
                 <p>неверный access токен</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.AlreadyDeletedError">AlreadyDeletedError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>аккаунт уже удалён</p>
               </div>
             </td>
           </tr>
@@ -5163,7 +5220,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>Удалить аккаунт</p>
+        <p>Восстановить аккаунт</p>
 
 
 <table>
@@ -5247,6 +5304,18 @@
             <td class="doc-raises-details">
               <div class="doc-md-description">
                 <p>неверный access токен</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.NotDeletedError">NotDeletedError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>аккаунт не удалён</p>
               </div>
             </td>
           </tr>
