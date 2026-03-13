@@ -152,7 +152,7 @@ class AsyncITDClient:
     @staticmethod
     def auth_required(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @wraps(func)
-        async def wrapper(self: AsyncITDClient, *args, **kwargs) -> Any:
+        async def wrapper(self: AsyncITDClient, *args: P.args, **kwargs: P.kwargs) -> T:
             if self.is_token_expired():
                 await self._refresh_with_lock()
             return await func(self, *args, **kwargs)
