@@ -501,7 +501,9 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
 
         """
-        return await get_verification_status(**kwargs)
+        return await get_verification_status(
+            self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
+        )
 
     @auth_required
     async def submit_verification(self, video_url: str, **kwargs) -> dict:
@@ -514,7 +516,9 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
 
         """
-        return await submit_verification(self.client, video_url, self.domain, timeout=self.timeout, **kwargs)
+        return await submit_verification(
+            self.client, self._access_token, video_url, self.domain, timeout=self.timeout, **kwargs
+        )
 
     @auth_required
     async def get_user(
