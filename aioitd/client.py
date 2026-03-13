@@ -197,15 +197,17 @@ class AsyncITDClient:
         """Поиск хештегов.
 
         Args:
-            query: текст запроса
+            query: текст запроса (len(query) <= 100)
             limit: максимальное количество выданных хештегов (1 <= limit <= 100)
 
         Returns:
             Список найденных хештегов
 
-        Raises:
-            ParamsValidationError: len(query) <= 100
         """
+        if len(query) > 100:
+            raise ValueError(
+                f'Максимальная длинна поискового запроса 100 символов, передано, длина={len(query)}, query="{query}"'
+            )
         limit = validate_limit(1, 100, limit)
         return await search_hashtags(self.client, query, limit, self.domain, timeout=self.timeout, **kwargs)
 
@@ -270,15 +272,18 @@ class AsyncITDClient:
         """Пометить прочитанными несколько уведомлений.
 
         Args:
-            notifications_ids: список UUID уведомлений (можно передавать как UUID, так и строки)
+            notifications_ids: список UUID уведомлений (можно передавать как UUID, так и строки) (len(notifications_ids) <= 20)
 
         Raises:
             UnauthorizedError: ошибка авторизации
-            ParamsValidationError: len(notifications_ids) <= 20
 
         Returns: 
             Количество прочитанных уведомлений
         """
+        if len(notifications_ids) > 20:
+            raise ValueError(
+                f"Максимальная количество уведомлений в одном батче 20, передано длина={len(notifications_ids)}, notifications_ids={notifications_ids}"
+            )
         notifications_ids = [validate_uuid(x) for x in notifications_ids]
         return await read_batch_notifications(
             self.client, self._access_token, notifications_ids, self.domain, timeout=self.timeout, **kwargs
@@ -608,15 +613,16 @@ class AsyncITDClient:
 
         Args:
             username_or_id: имя пользователя или его UUID
-            page: страница
+            page: страница (page >= 1)
             limit: максимальное количество пользователей на странице (1 <= limit <= 100)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Пользователь не найден
-            ParamsValidationError: page >= 1
             UserBlockedError: пользователь заблокирован
         """
+        if page <= 1:
+            raise ValueError(f"Минимальная страница 1, передано {page}")
         username_or_id = validate_username_or_uuid(username_or_id)
         limit = validate_limit(1, 100, limit)
         return await get_followers(
@@ -635,15 +641,16 @@ class AsyncITDClient:
 
         Args:
             username_or_id: имя пользователя или его UUID
-            page: страница
+            page: страница (page >= 1)
             limit: максимальное количество пользователей на странице (1 <= limit <= 100)
 
         Raises:
             UnauthorizedError: ошибка авторизации
             NotFoundError: Пользователь не найден
-            ParamsValidationError: page >= 1
             UserBlockedError: пользователь заблокирован
         """
+        if page <= 1:
+            raise ValueError(f"Минимальная страница 1, передано {page}")
         username_or_id = validate_username_or_uuid(username_or_id)
         limit = validate_limit(1, 100, limit)
         return await get_following(
@@ -720,8 +727,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: неверный access токен
-            PinNotOwnedError: вы не обладаете этим пином или такого пина не существует
-            ParamsValidationError: 1 <= len(slug) <= 50
+            PinNotOwnedError: вы не обладаете этим пином
         """
         return await set_pin(
             self.client, self._access_token, pin_slug, self.domain, timeout=self.timeout, **kwargs
@@ -880,13 +886,14 @@ class AsyncITDClient:
         """Получить заблокированных пользователей.
 
         Args:
-            page: страница
+            page: страница (page >= 1)
             limit: максимальное количество пользователей на странице (1 <= limit <= 100)
 
         Raises:
             UnauthorizedError: неверный access токен
-            ParamsValidationError: page >= 1
         """
+        if page <= 1:
+            raise ValueError(f"Минимальная страница 1, передано {page}")
         limit = validate_limit(1, 100, limit)
         return await get_blocked(
             self.client, self._access_token, page, limit, self.domain, timeout=self.timeout, **kwargs
@@ -901,12 +908,15 @@ class AsyncITDClient:
         """Подписаны ли вы на пользователей.
 
         Args:
-            user_ids: список UUID пользователей (можно передавать как UUID, так и строки)
+            user_ids: список UUID пользователей (можно передавать как UUID, так и строки) (len(user_ids) <= 20)
 
         Raises:
             UnauthorizedError: неверный access токен
-            ParamsValidationError: len(user_ids) <= 20
         """
+        if len(user_ids) > 20:
+            raise ValueError(
+                f"Максимальное количество переданнхы пользавтелей 20, передано {len(user_ids)}, user_ids={user_ids}"
+            )
         user_ids = [validate_uuid(uid) for uid in user_ids]
         return await get_follow_status(
             self.client, self._access_token, user_ids, self.domain, timeout=self.timeout, **kwargs
