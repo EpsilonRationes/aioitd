@@ -42,7 +42,8 @@ class ITDError(Exception):
         "Wall recipient not found": 'Пользователь не найден',
         'Account is already deleted': 'Аккаунт уже удалён',
         'Your account has been deleted. You can restore it within 30 days.': "Ваш аккаунт удалён, вы может восстановить его в течении 30 денй",
-        'Account is not deleted': 'Аккаунт удалён'
+        'Account is not deleted': 'Аккаунт удалён',
+        'Your account has been deactivated': "Аккаунт забанен"
     }
 
     def __init__(self, code: str, message: str):
@@ -192,6 +193,10 @@ class NotDeletedError(ITDError):
     code = "NOT_DELETED"
 
 
+class AccountBannedError(ITDError):
+    code = "ACCOUNT_BANNED"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -220,7 +225,8 @@ itd_exceptions = [
     EditWindowExpiredError,
     AlreadyDeletedError,
     AccountDeletedError,
-    NotDeletedError
+    NotDeletedError,
+    AccountBannedError
 ]
 
 itd_codes = {}
