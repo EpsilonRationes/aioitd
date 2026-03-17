@@ -5552,6 +5552,18 @@
               </div>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.ProfileNotFoundError">ProfileNotFoundError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>аккаунт не создан</p>
+              </div>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -6666,7 +6678,9 @@
 
 
 <a href="#aioitd.AsyncITDClient.get_profile" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_profile</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Profile (aioitd.models.Profile)" href="../models/users/#aioitd.models.users.Profile">Profile</a></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_profile</span><span class="p">(</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Profile (aioitd.models.Profile)" href="../models/users/#aioitd.models.users.Profile">Profile</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            BannedProfile (aioitd.models.BannedProfile)" href="../models/users/#aioitd.models.users.BannedProfile">BannedProfile</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            NotCreatedProfile (aioitd.models.NotCreatedProfile)" href="../models/users/#aioitd.models.users.NotCreatedProfile">NotCreatedProfile</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -9685,6 +9699,42 @@ AccountDeletedError, кроме get_me и get_me_uuid</p>
               </div>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.ParamsValidationError">ParamsValidationError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>span[i].offset &gt;= 0</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.ParamsValidationError">ParamsValidationError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>span[i].length &gt; 0</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.ParamsValidationError">ParamsValidationError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>len(span[i].url) &lt;= 2048</p>
+              </div>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -9702,7 +9752,19 @@ AccountDeletedError, кроме get_me и get_me_uuid</p>
 
 <a href="#aioitd.AsyncITDClient.update_post" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">update_post</span><span class="p">(</span>
-    <span class="n">post_id</span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="n">post_id</span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">content</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">spans</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span>
+        <span class="n"><a class="autorefs autorefs-internal" title="            Monospace (aioitd.models.Monospace)" href="../models/posts/#aioitd.models.posts.Monospace">Monospace</a></span>
+        <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Strike (aioitd.models.Strike)" href="../models/posts/#aioitd.models.posts.Strike">Strike</a></span>
+        <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Underline (aioitd.models.Underline)" href="../models/posts/#aioitd.models.posts.Underline">Underline</a></span>
+        <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Bold (aioitd.models.Bold)" href="../models/posts/#aioitd.models.posts.Bold">Bold</a></span>
+        <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Italic (aioitd.models.Italic)" href="../models/posts/#aioitd.models.posts.Italic">Italic</a></span>
+        <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Spoiler (aioitd.models.Spoiler)" href="../models/posts/#aioitd.models.posts.Spoiler">Spoiler</a></span>
+        <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Link (aioitd.models.Link)" href="../models/posts/#aioitd.models.posts.Link">Link</a></span>
+    <span class="p">]</span>
+    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            UpdatePostResponse (aioitd.models.UpdatePostResponse)" href="../models/posts/#aioitd.models.posts.UpdatePostResponse">UpdatePostResponse</a></span>
 </code></pre></div>
 
@@ -9747,6 +9809,26 @@ AccountDeletedError, кроме get_me и get_me_uuid</p>
                   <span class="doc-param-annotation">
                     <b>TYPE:</b>
                       <code><span title="str">str</span></code>
+                  </span>
+              </p>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>spans</code>
+            </td>
+            <td class="doc-param-details">
+              <div class="doc-md-description">
+                <p>Форматирование текста (список объектов форматирования)</p>
+              </div>
+              <p>
+                  <span class="doc-param-annotation">
+                    <b>TYPE:</b>
+                      <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="            Monospace (aioitd.models.Monospace)" href="../models/posts/#aioitd.models.posts.Monospace">Monospace</a> | <a class="autorefs autorefs-internal" title="            Strike (aioitd.models.Strike)" href="../models/posts/#aioitd.models.posts.Strike">Strike</a> | <a class="autorefs autorefs-internal" title="            Underline (aioitd.models.Underline)" href="../models/posts/#aioitd.models.posts.Underline">Underline</a> | <a class="autorefs autorefs-internal" title="            Bold (aioitd.models.Bold)" href="../models/posts/#aioitd.models.posts.Bold">Bold</a> | <a class="autorefs autorefs-internal" title="            Italic (aioitd.models.Italic)" href="../models/posts/#aioitd.models.posts.Italic">Italic</a> | <a class="autorefs autorefs-internal" title="            Spoiler (aioitd.models.Spoiler)" href="../models/posts/#aioitd.models.posts.Spoiler">Spoiler</a> | <a class="autorefs autorefs-internal" title="            Link (aioitd.models.Link)" href="../models/posts/#aioitd.models.posts.Link">Link</a>] | None</code>
+                  </span>
+                  <span class="doc-param-default">
+                    <b>DEFAULT:</b>
+                      <code>None</code>
                   </span>
               </p>
             </td>
@@ -9844,6 +9926,42 @@ AccountDeletedError, кроме get_me и get_me_uuid</p>
             <td class="doc-raises-details">
               <div class="doc-md-description">
                 <p>пост нельзя изменять спустя несколько дней</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.ParamsValidationError">ParamsValidationError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>span[i].offset &gt;= 0</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.ParamsValidationError">ParamsValidationError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>span[i].length &gt; 0</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.ParamsValidationError">ParamsValidationError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>len(span[i].url) &lt;= 2048</p>
               </div>
             </td>
           </tr>
