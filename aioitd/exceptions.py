@@ -197,6 +197,10 @@ class AccountBannedError(ITDError):
     code = "ACCOUNT_BANNED"
 
 
+class ProfileNotFoundError(ITDError):
+    code = "PROFILE_NOT_FOUND"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -226,7 +230,8 @@ itd_exceptions = [
     AlreadyDeletedError,
     AccountDeletedError,
     NotDeletedError,
-    AccountBannedError
+    AccountBannedError,
+    ProfileNotFoundError
 ]
 
 itd_codes = {}
