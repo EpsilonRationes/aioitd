@@ -30,6 +30,10 @@ class Profile(ITDBaseModel):
     """None если отправить запрос без access_token"""
 
 
+class BannedProfile(Profile):
+    message: str
+
+
 class LastSeenUnit(str, Enum):
     JUST_NOW = 'just_now'
     MINUTES = 'minutes'
@@ -164,5 +168,5 @@ __all__ = [
     'BaseFullUser', 'BlockedAuthor', 'Clan', 'FullMe', 'FullUser', 'LastSeen', 'LastSeenMixin', 'Me', 'Pin', 'PinSlug',
     'PinWithDate', 'Privacy', 'PrivateUser', 'Profile', 'User', 'UserBlockedByMe', 'UserBlockMe', 'UserStab',
     'UserWithAvatar', 'UserWithFollowersCount', 'UserWithFollowing', 'UserWithPin', 'UserWithRoles', 'UserWithVerified',
-    'Visibility', 'LastSeenUnit', 'DeletedMe'
+    'Visibility', 'LastSeenUnit', 'DeletedMe', 'BannedProfile'
 ]

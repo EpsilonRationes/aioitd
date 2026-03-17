@@ -785,7 +785,7 @@ class AsyncITDClient:
         )
 
     @auth_required
-    async def get_profile(self, **kwargs) -> Profile:
+    async def get_profile(self, **kwargs) -> Profile | BannedProfile:
         """Профиль текущего пользователя.
 
         Raises:

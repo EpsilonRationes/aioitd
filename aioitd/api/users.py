@@ -4,7 +4,7 @@ from uuid import UUID
 
 import httpx
 
-from aioitd import datetime_from_itd_format, DeletedMe
+from aioitd import datetime_from_itd_format, DeletedMe, BannedProfile
 from aioitd.fetch import get, add_bearer, post, delete, put
 from aioitd.models.users import BlockedAuthor, FullUser, UserBlockedByMe, Me, PinWithDate, UserBlockMe, PrivateUser, \
     FullMe, \
@@ -477,7 +477,7 @@ async def get_profile(
         access_token: str,
         domain: str = "xn--d1ah4a.com",
         **kwargs
-) -> Profile:
+) -> Profile | BannedProfile:
     """Профиль текущего пользователя.
     
     Args:
@@ -496,6 +496,8 @@ async def get_profile(
         **kwargs
     )
     data = response.json()
+    if 'message' in data:
+        return BannedProfile(**data)
     return Profile(**data)
 
 
