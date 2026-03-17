@@ -1354,6 +1354,9 @@ class AsyncITDClient:
             ValidationError: 1 <= len(question) <= 128
             ValidationError: 2 <= len(options) <= 10
             ValidationError: 1 <= len(options[i]) <= 32
+            ParamsValidationError: span[i].offset >= 0
+            ParamsValidationError: span[i].length > 0
+            ParamsValidationError: len(span[i].url) <= 2048
         """
         if attachment_ids is not None:
             attachment_ids = [validate_uuid(aid) for aid in attachment_ids]
@@ -1370,6 +1373,7 @@ class AsyncITDClient:
             self,
             post_id: UUID | str,
             content: str,
+            spans: list[Monospace | Strike | Underline | Bold | Italic | Spoiler | Link] | None = None,
             **kwargs
     ) -> UpdatePostResponse:
         """Изменить текст поста.
@@ -1377,6 +1381,7 @@ class AsyncITDClient:
         Args:
             post_id: UUID поста (можно передавать как UUID, так и строку)
             content: Новый текст поста
+            spans: Форматирование текста (список объектов форматирования)
 
         Returns:
             Обновлённый пост (содержит дату редактирования)
@@ -1387,10 +1392,13 @@ class AsyncITDClient:
             ValidationError: 1 <= len(content) <= 1_000
             ForbiddenError: Нет прав для редактирования этого поста
             EditWindowExpiredError: пост нельзя изменять спустя несколько дней
+            ParamsValidationError: span[i].offset >= 0
+            ParamsValidationError: span[i].length > 0
+            ParamsValidationError: len(span[i].url) <= 2048
         """
         post_id = validate_uuid(post_id)
         return await update_post(
-            self.client, self._access_token, post_id, content,
+            self.client, self._access_token, post_id, content, spans,
             self.domain, timeout=self.timeout, **kwargs
         )
 
