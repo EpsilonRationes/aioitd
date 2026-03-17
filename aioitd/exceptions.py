@@ -1,3 +1,5 @@
+from httpx import Response
+
 from httpx_sse import SSEError
 
 
@@ -45,10 +47,14 @@ class ITDError(Exception):
         'Account is not deleted': 'Аккаунт удалён',
         'Your account has been deactivated': "Аккаунт забанен"
     }
+    code = "UNCNOWN"
 
-    def __init__(self, code: str, message: str):
-        self.message = message
-        self.code = code
+    def __init__(self, code: str | None = None, message: str = "", response: Response | None = None):
+        if len(message) == 0 and hasattr(self, 'message'):
+            self.message = message
+        if code is not None:
+            self.code = code
+        self.response = response
 
     def __str__(self):
         return f"code='{self.code}', message='{self.messages.get(self.message, self.message)}'"
@@ -75,9 +81,10 @@ class UnknowError(ITDError):
 class RateLimitError(ITDError):
     code = "RATE_LIMIT_EXCEEDED"
 
-    def __init__(self, code: str, message: str, retry_after: int):
+    def __init__(self, code: str, message: str, retry_after: int, response: Response | None = None):
         super().__init__(code, message)
         self.retry_after = retry_after
+        self.response = response
 
     def __str__(self):
         return super().__str__() + f", retry_after={self.retry_after}"
@@ -116,10 +123,11 @@ class UploadError(ITDError):
 
 
 class ParamsValidationError(ITDError):
-    def __init__(self, type: str, on: str, found: dict[str, str]):
+    def __init__(self, type: str, on: str, found: dict[str, str], response: Response | None = None):
         self.type = type
         self.on = on
         self.found = found
+        self.response = response
 
     def __str__(self):
         return f"type: {self.type}, on: {self.on}, found: {self.found}"
@@ -237,3 +245,42 @@ itd_exceptions = [
 itd_codes = {}
 for exception in itd_exceptions:
     itd_codes[exception.code] = exception
+
+__all__ = [
+    "ITDError",
+    "UnauthorizedError",
+    "ServerError",
+    "GatewayTimeOutError",
+    "UnknowError",
+    "RateLimitError",
+    "TokenNotFoundError",
+    "TokenRevokedError",
+    "TokenExpiredError",
+    "TokenMissingError",
+    "SomePasswordError",
+    "InvalidPasswordError",
+    "InvalidOldPasswordError",
+    "UploadError",
+    "ParamsValidationError",
+    "ValidationError",
+    "TooLargeError",
+    "NotAllowedError",
+    "NotFoundError",
+    "ForbiddenError",
+    "NotPinedError",
+    "ConflictError",
+    "UserBlockedError",
+    "PinNotOwnedError",
+    "ContentModerationError",
+    "UsernameTakenError",
+    "VideoRequiresVerificationError",
+    "WallClosedError",
+    "EditWindowExpiredError",
+    "AlreadyDeletedError",
+    "AccountDeletedError",
+    "NotDeletedError",
+    "AccountBannedError",
+    "ProfileNotFoundError",
+    "itd_codes",
+    "SSEError"
+]

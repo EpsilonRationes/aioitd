@@ -36,7 +36,7 @@ def is_token_expired(access_token: str) -> bool:
 
     """
     payload = decode_jwt_payload(access_token)
-    return time.time() - 1 >= payload['exp']
+    return time.time() + 10 >= payload['exp']
 
 
 def add_bearer(token: str):
@@ -52,42 +52,42 @@ async def request(
         url: str,
         **kwargs
 ) -> httpx.Response:
-    result = await method(url, **kwargs)
+    response = await method(url, **kwargs)
 
-    if result.text == "UNAUTHORIZED":
-        raise UnauthorizedError
-    if result.text == "NOT_FOUND":
-        raise NotFoundError(NotFoundError.code, "Not found")
-    if result.status_code == 413:
-        raise TooLargeError(TooLargeError.code, "Размер запроса слишком большой")
-    if result.status_code == 405:
-        raise NotAllowedError(NotAllowedError.code, "Not Allowed")
-    if result.status_code == 504:
-        raise GatewayTimeOutError(GatewayTimeOutError.code, "504 Gateway Time-out")
+    if response.text == "UNAUTHORIZED":
+        raise UnauthorizedError(response=response)
+    if response.text == "NOT_FOUND":
+        raise NotFoundError(NotFoundError.code, "Not found", response=response)
+    if response.status_code == 413:
+        raise TooLargeError(TooLargeError.code, "Размер запроса слишком большой", response=response)
+    if response.status_code == 405:
+        raise NotAllowedError(NotAllowedError.code, "Not Allowed", response=response)
+    if response.status_code == 504:
+        raise GatewayTimeOutError(GatewayTimeOutError.code, "504 Gateway Time-out", response=response)
 
     try:
-        data = result.json()
+        data = response.json()
         if 'type' in data:
-            raise ParamsValidationError(type=data['type'], on=data['on'], found=data.get('found'))
+            raise ParamsValidationError(type=data['type'], on=data['on'], found=data.get('found'), response=response)
         if 'error' in data:
             if 'retry_after' in data:
-                raise RateLimitError(RateLimitError.code, data['error'], retry_after=data["retry_after"])
+                raise RateLimitError(RateLimitError.code, data['error'], retry_after=data["retry_after"], response=response)
             if data['error'] == 'Too Many Requests':
-                raise RateLimitError(RateLimitError.code, data['error'], retry_after=-1)
+                raise RateLimitError(RateLimitError.code, data['error'], retry_after=-1, response=response)
             error = data['error']
             if error['code'] == "RATE_LIMIT_EXCEEDED":
-                raise RateLimitError(code=error['code'], message=error["message"], retry_after=error["retryAfter"])
+                raise RateLimitError(code=error['code'], message=error["message"], retry_after=error["retryAfter"], response=response)
             if error['code'] in itd_codes:
                 ex = itd_codes[error['code']]
                 message = ex.message if hasattr(ex, "message") else error['message']
                 raise ex(ex.code, message)
             else:
-                raise ITDError(code=error['code'], message=error["message"])
+                raise ITDError(code=error['code'], message=error["message"], response=response)
     except JSONDecodeError:
-        if result.status_code != 204:
-            raise ITDError("UNKNOWN", result.text)
+        if response.status_code != 204:
+            raise ITDError("UNKNOWN", response.text, response=response)
 
-    return result
+    return response
 
 
 async def get(
