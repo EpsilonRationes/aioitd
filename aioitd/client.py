@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
 from functools import wraps
-from typing import IO, Any, TypeVar, ParamSpec, Callable, Awaitable, Literal, AsyncIterator, \
+from typing import IO, TypeVar, ParamSpec, Callable, Awaitable, Literal, AsyncIterator, \
     AsyncGenerator
 import asyncio
 from uuid import UUID
@@ -49,9 +49,9 @@ def validate_username_or_uuid(username_or_uuid: str | None) -> UUID | str:
     return validate_username(username_or_uuid)
 
 
-def validate_limit(min: int, max: int, limit: int) -> int:
-    if not (min <= limit <= max):
-        raise ValueError(f'Лимит должен быть от {min} до {max}, передан {limit}')
+def validate_limit(min_val: int, max_val: int, limit: int) -> int:
+    if not (min_val <= limit <= max_val):
+        raise ValueError(f'Лимит должен быть от {min_val} до {max_val}, передан {limit}')
     return limit
 
 
