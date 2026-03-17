@@ -568,6 +568,9 @@ async def create_post(
         ValidationError: 1 <= len(question) <= 128
         ValidationError: 2 <= len(options) <= 10
         ValidationError: 1 <= len(options[i]) <= 32
+        ParamsValidationError: span[i].offset >= 0
+        ParamsValidationError: span[i].length > 0
+        ParamsValidationError: len(span[i].url) <= 2048
     """
     if attachment_ids is None:
         attachment_ids = []
@@ -638,6 +641,9 @@ async def update_post(
         ValidationError: 1 <= len(content) <= 1_000
         ForbiddenError: Нет прав для редактирования этого поста
         EditWindowExpiredError: пост нельзя изменять спустя несколько дней
+        ParamsValidationError: span[i].offset >= 0
+        ParamsValidationError: span[i].length > 0
+        ParamsValidationError: len(span[i].url) <= 2048
     """
     if spans is None:
         spans = []

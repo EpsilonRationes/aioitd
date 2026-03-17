@@ -398,3 +398,71 @@ async def test_update_post_window(client, access_token):
         await update_post(client, access_token, UUID("b65e58f1-84a3-41d4-8626-e56ea46be97b"), "update")
     except EditWindowExpiredError:
         pass
+
+
+@pytest.mark.asyncio
+async def test_spans(client, access_token):
+    with pytest.raises(ParamsValidationError):
+        spans = [
+            Spoiler(length=0, offset=0)
+        ]
+        post = await create_post(client, access_token, '1', spans=spans)
+        print(post)
+
+    spans = [
+        Spoiler(length=10000000, offset=0)
+    ]
+    post = await create_post(client, access_token, '1', spans=spans)
+    print(post)
+
+    spans = [
+        Spoiler(length=2, offset=0)
+    ]
+    post = await create_post(client, access_token, '1', spans=spans)
+    print(post)
+
+    spans = [
+        Spoiler(length=1, offset=1)
+    ]
+    post = await create_post(client, access_token, '1', spans=spans)
+    print(post)
+
+    with pytest.raises(ParamsValidationError):
+        spans = [
+            Spoiler(length=1, offset=-1)
+        ]
+        post = await create_post(client, access_token, '1', spans=spans)
+        print(post)
+
+    spans = [
+        Spoiler(length=1, offset=10000000)
+    ]
+    post = await create_post(client, access_token, '1', spans=spans)
+    print(post)
+
+    spans = [
+        Link(length=1, offset=0, url="")
+    ]
+    post = await create_post(client, access_token, '1', spans=spans)
+    print(post)
+
+
+    spans = [
+        Link(length=1, offset=0, url="1")
+    ]
+    post = await create_post(client, access_token, '1', spans=spans)
+    print(post)
+
+
+    spans = [
+        Link(length=1, offset=0, url="1"*2048)
+    ]
+    post = await create_post(client, access_token, '1', spans=spans)
+    print(post)
+
+    with pytest.raises(ParamsValidationError):
+        spans = [
+            Link(length=1, offset=0, url="1" * 2048)
+        ]
+        post = await create_post(client, access_token, '1', spans=spans)
+        print(post)
