@@ -551,6 +551,7 @@ class AsyncITDClient:
 
         Raises:
             UnauthorizedError: ошибка авторизации
+            ProfileNotFoundError: аккаунт не создан
         """
         return await get_me(
             self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
@@ -785,7 +786,7 @@ class AsyncITDClient:
         )
 
     @auth_required
-    async def get_profile(self, **kwargs) -> Profile | BannedProfile:
+    async def get_profile(self, **kwargs) -> Profile | BannedProfile | NotCreatedProfile:
         """Профиль текущего пользователя.
 
         Raises:

@@ -23,6 +23,14 @@ class Privacy(ITDBaseModel):
     show_last_seen: Annotated[bool, Field(alias="showLastSeen")]
 
 
+class NotCreatedProfile(ITDBaseModel):
+    profile_required: Annotated[bool, Field(alias="profileRequired")]
+    user_id: Annotated[UUID, Field(alias="userId")]
+    roles: list[str]
+    authenticated: bool
+    user: None
+
+
 class Profile(ITDBaseModel):
     authenticated: bool
     banned: bool
@@ -168,5 +176,5 @@ __all__ = [
     'BaseFullUser', 'BlockedAuthor', 'Clan', 'FullMe', 'FullUser', 'LastSeen', 'LastSeenMixin', 'Me', 'Pin', 'PinSlug',
     'PinWithDate', 'Privacy', 'PrivateUser', 'Profile', 'User', 'UserBlockedByMe', 'UserBlockMe', 'UserStab',
     'UserWithAvatar', 'UserWithFollowersCount', 'UserWithFollowing', 'UserWithPin', 'UserWithRoles', 'UserWithVerified',
-    'Visibility', 'LastSeenUnit', 'DeletedMe', 'BannedProfile'
+    'Visibility', 'LastSeenUnit', 'DeletedMe', 'BannedProfile', 'NotCreatedProfile'
 ]

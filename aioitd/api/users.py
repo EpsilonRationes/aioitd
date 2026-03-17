@@ -4,7 +4,7 @@ from uuid import UUID
 
 import httpx
 
-from aioitd import datetime_from_itd_format, DeletedMe, BannedProfile
+from aioitd import datetime_from_itd_format, DeletedMe, BannedProfile, NotCreatedProfile
 from aioitd.fetch import get, add_bearer, post, delete, put
 from aioitd.models.users import BlockedAuthor, FullUser, UserBlockedByMe, Me, PinWithDate, UserBlockMe, PrivateUser, \
     FullMe, \
@@ -68,6 +68,7 @@ async def get_me(
 
     Raises:
         UnauthorizedError: ошибка авторизации
+        ProfileNotFoundError: аккаунт не создан
     """
     response = await get(
         client,
@@ -477,7 +478,7 @@ async def get_profile(
         access_token: str,
         domain: str = "xn--d1ah4a.com",
         **kwargs
-) -> Profile | BannedProfile:
+) -> Profile | BannedProfile | NotCreatedProfile:
     """Профиль текущего пользователя.
     
     Args:
@@ -498,6 +499,8 @@ async def get_profile(
     data = response.json()
     if 'message' in data:
         return BannedProfile(**data)
+    if 'roles' in data:
+        return NotCreatedProfile(**data)
     return Profile(**data)
 
 
