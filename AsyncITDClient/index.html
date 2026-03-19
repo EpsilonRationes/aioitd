@@ -6296,7 +6296,9 @@
 
 
 <a href="#aioitd.AsyncITDClient.get_pins" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_pins</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            PinWithDate (aioitd.models.PinWithDate)" href="../models/users/#aioitd.models.users.PinWithDate">PinWithDate</a></span><span class="p">]]</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_pins</span><span class="p">(</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            PinSlug (aioitd.models.PinSlug)" href="../models/users/#aioitd.models.users.PinSlug">PinSlug</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            PinWithDate (aioitd.models.PinWithDate)" href="../models/users/#aioitd.models.users.PinWithDate">PinWithDate</a></span><span class="p">]]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6315,12 +6317,12 @@
           <tr class="doc-section-item">
             <td>
                 <span class="doc-returns-annotation">
-                    <code><span title="tuple">tuple</span>[<span title="str">str</span> | None, <span title="list">list</span>[<a class="autorefs autorefs-internal" title="            PinWithDate (aioitd.models.PinWithDate)" href="../models/users/#aioitd.models.users.PinWithDate">PinWithDate</a>]]</code>
+                    <code><span title="tuple">tuple</span>[<a class="autorefs autorefs-internal" title="            PinSlug (aioitd.models.PinSlug)" href="../models/users/#aioitd.models.users.PinSlug">PinSlug</a> | None, <span title="list">list</span>[<a class="autorefs autorefs-internal" title="            PinWithDate (aioitd.models.PinWithDate)" href="../models/users/#aioitd.models.users.PinWithDate">PinWithDate</a>]]</code>
                 </span>
             </td>
             <td class="doc-returns-details">
               <div class="doc-md-description">
-                <p>(активный пин, список доступных пинов)</p>
+                <p>(активный пин, список доступных пинов) Если пина нет в enum PinSlug, то его в списке не будет</p>
               </div>
             </td>
           </tr>
