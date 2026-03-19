@@ -1,14 +1,12 @@
 from datetime import datetime
-from typing import NamedTuple
 from uuid import UUID
 
 import httpx
 
-from aioitd import datetime_from_itd_format, DeletedMe, BannedProfile, NotCreatedProfile
+from aioitd import datetime_from_itd_format, DeletedMe, BannedProfile, NotCreatedProfile, validate_pin_with_date_or_none
 from aioitd.fetch import get, add_bearer, post, delete, put
 from aioitd.models.users import BlockedAuthor, FullUser, UserBlockedByMe, Me, PinWithDate, UserBlockMe, PrivateUser, \
-    FullMe, \
-    UserWithFollowing, Clan, Privacy, Profile, Visibility, UserWithFollowersCount, PinSlug
+    FullMe, PinSlug, UserWithFollowing, Clan, Privacy, Profile, Visibility, UserWithFollowersCount, PinSlug
 from aioitd.models.base import PagePagination
 
 
@@ -319,7 +317,7 @@ async def get_pins(
         access_token: str,
         domain: str = "xn--d1ah4a.com",
         **kwargs
-) -> tuple[str | None, list[PinWithDate]]:
+) -> tuple[PinSlug | None, list[PinWithDate]]:
     """Получить список пин'ов и текущий пин.
     
     Args:
@@ -328,7 +326,7 @@ async def get_pins(
         domain: домен
 
     Returns:
-        (активный пин, список доступных пинов)
+        (активный пин, список доступных пинов) Если пина нет в enum PinSlug, то его в списке не будет
 
     Raises:
         UnauthorizedError: неверный access токен
@@ -341,7 +339,15 @@ async def get_pins(
         **kwargs
     )
     data = response.json()["data"]
-    return data['activePin'], list(map(PinWithDate.model_validate, data["pins"]))
+    try:
+        pin = PinSlug(data['activePin'])
+    except ValueError:
+        pin = None
+
+    return pin, list(filter(
+        lambda pin: pin is not None,
+        map(validate_pin_with_date_or_none, data["pins"])
+    ))
 
 
 async def set_pin(

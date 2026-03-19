@@ -706,11 +706,11 @@ class AsyncITDClient:
         )
 
     @auth_required
-    async def get_pins(self, **kwargs) -> tuple[str | None, list[PinWithDate]]:
+    async def get_pins(self, **kwargs) -> tuple[PinSlug | None, list[PinWithDate]]:
         """Получить список пинов и текущий пин.
 
         Returns:
-            (активный пин, список доступных пинов)
+            (активный пин, список доступных пинов) Если пина нет в enum PinSlug, то его в списке не будет
 
         Raises:
             UnauthorizedError: неверный access токен

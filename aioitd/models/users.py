@@ -1,9 +1,9 @@
 from enum import Enum
+from typing import Annotated, Literal, Any
+from pydantic import Field, BeforeValidator
+from uuid import UUID
 
 from aioitd.models.base import ITDDatetime, ITDBaseModel
-from typing import Annotated, Literal
-from pydantic import Field
-from uuid import UUID
 
 
 class Visibility(str, Enum):
@@ -76,8 +76,36 @@ class Pin(ITDBaseModel):
     slug: PinSlug
 
 
+def validate_pin_or_none(value: Any) -> Any:
+    """Преобразует неизвестные значения пинов в None"""
+    if value is None:
+        return None
+
+    if isinstance(value, dict):
+        try:
+            return Pin(**value)
+        except ValueError:
+            return None
+
+    return value
+
+
 class PinWithDate(Pin):
     granted_at: Annotated[ITDDatetime, Field(alias="grantedAt")]
+
+
+def validate_pin_with_date_or_none(value: Any) -> Any:
+    """Преобразует неизвестные значения пинов в None"""
+    if value is None:
+        return None
+
+    if isinstance(value, dict):
+        try:
+            return PinWithDate(**value)
+        except ValueError:
+            return None
+
+    return value
 
 
 class UserStab(ITDBaseModel):
@@ -99,7 +127,11 @@ class UserWithFollowersCount(UserWithVerified):
 
 
 class UserWithPin(UserWithVerified):
-    pin: Pin | None
+    pin: Annotated[
+        Pin | None,
+        BeforeValidator(validate_pin_or_none)
+    ]
+    """Если пина нет в enum PinSlug, то будет None"""
 
 
 class UserWithRoles(UserWithVerified):
@@ -176,5 +208,6 @@ __all__ = [
     'BaseFullUser', 'BlockedAuthor', 'Clan', 'FullMe', 'FullUser', 'LastSeen', 'LastSeenMixin', 'Me', 'Pin', 'PinSlug',
     'PinWithDate', 'Privacy', 'PrivateUser', 'Profile', 'User', 'UserBlockedByMe', 'UserBlockMe', 'UserStab',
     'UserWithAvatar', 'UserWithFollowersCount', 'UserWithFollowing', 'UserWithPin', 'UserWithRoles', 'UserWithVerified',
-    'Visibility', 'LastSeenUnit', 'DeletedMe', 'BannedProfile', 'NotCreatedProfile'
+    'Visibility', 'LastSeenUnit', 'DeletedMe', 'BannedProfile', 'NotCreatedProfile', 'validate_pin_or_none',
+    'validate_pin_with_date_or_none'
 ]
