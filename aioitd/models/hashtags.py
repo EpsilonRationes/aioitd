@@ -3,10 +3,10 @@ from typing import Annotated
 
 from pydantic import Field
 
-from aioitd.models.base import ITDBaseModel
+from aioitd.objects.hashtags import HashtagRef
 
 
-class Hashtag(ITDBaseModel):
+class Hashtag(HashtagRef):
     id: UUID
     name: str
     posts_count: Annotated[int, Field(alias="postsCount")]

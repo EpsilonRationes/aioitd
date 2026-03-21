@@ -4,6 +4,7 @@ from pydantic import Field, BeforeValidator
 from uuid import UUID
 
 from aioitd.models.base import ITDDatetime, ITDBaseModel
+from aioitd.objects import UserRef
 
 
 class Visibility(str, Enum):
@@ -108,7 +109,7 @@ def validate_pin_with_date_or_none(value: Any) -> Any:
     return value
 
 
-class UserStab(ITDBaseModel):
+class UserStab(UserRef):
     id: UUID
     username: str | None
     display_name: Annotated[str, Field(alias="displayName")]

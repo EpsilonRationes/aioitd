@@ -6,6 +6,7 @@ from pydantic import Field
 
 from aioitd.models.base import ITDBaseModel, ITDDatetime
 from aioitd.models.users import UserWithAvatar
+from aioitd.objects.notifications import NotificationRef
 
 
 class NotificationType(str, Enum):
@@ -26,7 +27,7 @@ class Actor(UserWithAvatar):
     is_following: Annotated[bool, Field(alias="isFollowing")]
 
 
-class Notification(ITDBaseModel):
+class Notification(NotificationRef):
     id: UUID
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
     preview: str | None

@@ -6,6 +6,7 @@ from pydantic import Field
 from aioitd.models.base import ITDBaseModel, ITDDatetime
 from aioitd.models.files import Attachment
 from aioitd.models.users import UserWithPin, UserStab
+from aioitd.objects.comments import CommentRef
 
 
 class UpdateCommentResponse(ITDBaseModel):
@@ -14,7 +15,7 @@ class UpdateCommentResponse(ITDBaseModel):
     edited_at: Annotated[ITDDatetime | None, Field(alias="editedAt")]
 
 
-class Comment(ITDBaseModel):
+class Comment(CommentRef):
     id: UUID
     content: Annotated[str, Field(max_length=5000)]
     author: UserWithPin

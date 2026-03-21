@@ -1,58 +1,20 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
-from functools import wraps
+from functools import wraps, partial
 from typing import IO, TypeVar, ParamSpec, Callable, Awaitable, Literal, AsyncIterator, \
     AsyncGenerator
 import asyncio
 from uuid import UUID
-import re
 
 from httpx import AsyncClient
 
 from aioitd.models import *
 from aioitd.api import *
 from aioitd.fetch import is_token_expired, decode_jwt_payload
+from aioitd.objects import *
 
 P = ParamSpec("P")
 T = TypeVar("T")
-
-
-def validate_username(username: str | None) -> str:
-    if username is None:
-        raise ValueError("username не может быть None")
-    if not (3 <= len(username) <= 50):
-        raise ValueError(f"Длина юзернейма от 3 до 50, получено {len(username)}: {username!r}")
-    if not re.fullmatch(r'[A-Za-z0-9_]+', username):  # + вместо * (хотя бы один символ)
-        raise ValueError(
-            f"Юзернейм может содержать только латинские буквы, цифры и _, получено: {username!r}"
-        )
-    return username
-
-
-def validate_uuid(uuid: str | UUID) -> UUID:
-    if isinstance(uuid, UUID):
-        return uuid
-    try:
-        return UUID(uuid)
-    except ValueError:
-        raise ValueError(f'Неверный формат uuid: "{uuid}"')
-
-
-def validate_username_or_uuid(username_or_uuid: str | None) -> UUID | str:
-    if username_or_uuid is None:
-        validate_username(username_or_uuid)
-    try:
-        return validate_uuid(username_or_uuid)
-    except ValueError:
-        pass
-
-    return validate_username(username_or_uuid)
-
-
-def validate_limit(min_val: int, max_val: int, limit: int) -> int:
-    if not (min_val <= limit <= max_val):
-        raise ValueError(f'Лимит должен быть от {min_val} до {max_val}, передан {limit}')
-    return limit
 
 
 class AsyncITDClient:
@@ -128,6 +90,41 @@ class AsyncITDClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.__close_client:
             await self.close()
+
+    def _set_client(self, obj):
+        if hasattr(obj, 'client'):
+            obj.client = self
+
+        if isinstance(obj, (list, tuple, set)):
+            for item in obj:
+                self._set_client(item)
+        elif isinstance(obj, ITDBaseModel):
+            for item in obj.model_fields.values():
+                self._set_client(item)
+
+    @property
+    def HashTagRef(self) -> Callable[[str], HashtagRef]:
+        return partial(HashtagRef, client=self)
+
+    @property
+    def FileRef(self) -> Callable[[str], FileRef]:
+        return partial(FileRef, client=self)
+
+    @property
+    def NotificationRef(self) -> Callable[[str], NotificationRef]:
+        return partial(NotificationRef, client=self)
+
+    @property
+    def PostRef(self) -> Callable[[str], PostRef]:
+        return partial(PostRef, client=self)
+
+    @property
+    def CommentRef(self) -> Callable[[str], CommentRef]:
+        return partial(CommentRef, client=self)
+
+    @property
+    def UserRef(self) -> Callable[[str], UserRef]:
+        return partial(HashtagRef, client=self)
 
     async def refresh(self, **kwargs) -> None:
         """Обновить `access_token`
@@ -209,7 +206,9 @@ class AsyncITDClient:
                 f'Максимальная длинна поискового запроса 100 символов, передано, длина={len(query)}, query="{query}"'
             )
         limit = validate_limit(1, 100, limit)
-        return await search_hashtags(self.client, query, limit, self.domain, timeout=self.timeout, **kwargs)
+        result = await search_hashtags(self.client, query, limit, self.domain, timeout=self.timeout, **kwargs)
+        self._set_client(result)
+        return result
 
     async def get_trending_hashtags(self, limit: int = 10, **kwargs) -> list[Hashtag]:
         """Получить самые популярные хештеги.
@@ -221,7 +220,9 @@ class AsyncITDClient:
             Список самых популярных хештегов
         """
         limit = validate_limit(1, 50, limit)
-        return await get_trending_hashtags(self.client, limit, self.domain, timeout=self.timeout, **kwargs)
+        result = await get_trending_hashtags(self.client, limit, self.domain, timeout=self.timeout, **kwargs)
+        self._set_client(result)
+        return result
 
     async def get_posts_by_hashtag(
             self,
@@ -244,9 +245,11 @@ class AsyncITDClient:
             NotFoundError: Хештег не найден
         """
         limit = validate_limit(1, 50, limit)
-        return await get_posts_by_hashtag(
+        result = await get_posts_by_hashtag(
             self.client, hashtag_name, cursor, limit, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_notifications(self, offset: int = 0, limit: int = 30, **kwargs) -> tuple[bool, list[Notification]]:
@@ -263,12 +266,18 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             ITDError: offset >= 0
         """
-        return await get_notifications(
+        result = await get_notifications(
             self.client, self._access_token, offset, limit, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
-    async def read_batch_notifications(self, notifications_ids: list[UUID | str], **kwargs) -> int:
+    async def read_batch_notifications(
+            self,
+            notifications_ids: list[UUID | str],
+            **kwargs
+    ) -> int:
         """Пометить прочитанными несколько уведомлений.
 
         Args:
@@ -343,8 +352,10 @@ class AsyncITDClient:
         Returns:
             Настройки уведомлений
         """
-        return await get_notification_settings(self.client, self._access_token, self.domain, timeout=self.timeout,
-                                               **kwargs)
+        result = await get_notification_settings(self.client, self._access_token, self.domain, timeout=self.timeout,
+                                                 **kwargs)
+        self._set_client(result)
+        return result
 
     @auth_required
     async def update_notification_settings(
@@ -375,8 +386,13 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: ошибка авторизации
         """
-        return await update_notification_settings(self.client, self._access_token, comments, enabled, follows, mentions,
-                                                  sound, likes, wall_posts, self.domain, timeout=self.timeout, **kwargs)
+        result = await update_notification_settings(
+            self.client, self._access_token, comments, enabled, follows,
+            mentions, sound, likes, wall_posts, self.domain,
+            timeout=self.timeout, **kwargs
+        )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_file(self, file_id: UUID | str, **kwargs) -> GetFile:
@@ -393,7 +409,9 @@ class AsyncITDClient:
 
         """
         file_id = validate_uuid(file_id)
-        return await get_file(self.client, self._access_token, file_id, self.domain, timeout=self.timeout, **kwargs)
+        result = await get_file(self.client, self._access_token, file_id, self.domain, timeout=self.timeout, **kwargs)
+        self._set_client(result)
+        return result
 
     @auth_required
     async def upload_file(self, file: IO[bytes], **kwargs) -> File:
@@ -413,9 +431,11 @@ class AsyncITDClient:
             ContentModerationError: Не удалось проверить файл
 
         """
-        return await upload_file(
+        result = await upload_file(
             self.client, self._access_token, file, self.domain, timeout=self.file_upload_timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def delete_file(self, file_id: UUID | str, **kwargs) -> None:
@@ -435,10 +455,10 @@ class AsyncITDClient:
     async def report(
             self,
             target_id: UUID | str,
-            target_type: ReportTargetType | Literal[
+            target_type: ReportTargetType | Literal["post", "comment", "user"] = ReportTargetType.USER,
+            reason: Reason | Literal[
                 "spam", "violence", "hate", "adult", "misinfo", "other"
-            ] = ReportTargetType.USER,
-            reason: Reason | Literal["post", "comment", "user"] = Reason.OTHER,
+            ] = Reason.OTHER,
             description: str = "",
             **kwargs
     ) -> Report:
@@ -457,13 +477,16 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             ValidationError: не найден пост, пользователь или комментарий по target_id
             ValidationError: нельзя отправить жалобу на один и тот же контент
-            PramsValidationError: len(description) <= 1000
         """
+        if len(description) > 100:
+            raise ValueError(f"Максимальная длина описания 100 передано: длина={len(description)}, {description}")
         target_id = validate_uuid(target_id)
-        return await report(
+        result = await report(
             self.client, self._access_token, target_id, target_type, reason, description, self.domain,
             timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     async def search(
             self,
@@ -486,9 +509,11 @@ class AsyncITDClient:
             user_limit = validate_limit(1, 20, user_limit)
         if hashtag_limit is not None:
             hashtag_limit = validate_limit(1, 20, hashtag_limit)
-        return await search(
+        result = await search(
             self.client, query, user_limit, hashtag_limit, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_verification_status(self, **kwargs) -> str:
@@ -537,9 +562,11 @@ class AsyncITDClient:
             UserBlockedError: пользователь заблокирован
         """
         username_or_id = validate_username_or_uuid(username_or_id)
-        return await get_user(
+        response = await get_user(
             self.client, self._access_token, username_or_id, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(response)
+        return response
 
     @auth_required
     async def get_me(self, **kwargs) -> FullMe | DeletedMe:
@@ -553,9 +580,11 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             ProfileNotFoundError: аккаунт не создан
         """
-        return await get_me(
+        result = await get_me(
             self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def follow(
@@ -630,9 +659,11 @@ class AsyncITDClient:
             raise ValueError(f"Минимальная страница 1, передано {page}")
         username_or_id = validate_username_or_uuid(username_or_id)
         limit = validate_limit(1, 100, limit)
-        return await get_followers(
+        result = await get_followers(
             self.client, self._access_token, username_or_id, page, limit, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_following(
@@ -658,9 +689,11 @@ class AsyncITDClient:
             raise ValueError(f"Минимальная страница 1, передано {page}")
         username_or_id = validate_username_or_uuid(username_or_id)
         limit = validate_limit(1, 100, limit)
-        return await get_following(
+        result = await get_following(
             self.client, self._access_token, username_or_id, page, limit, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_top_clans(self, **kwargs) -> list[Clan]:
@@ -669,9 +702,11 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: ошибка авторизации
         """
-        return await get_top_clans(
+        result = await get_top_clans(
             self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_who_to_follow(self, **kwargs) -> list[UserWithFollowersCount]:
@@ -680,9 +715,11 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: ошибка авторизации
         """
-        return await get_who_to_follow(
+        result = await get_who_to_follow(
             self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def search_users(
@@ -701,9 +738,11 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
         """
         limit = validate_limit(1, 50, limit)
-        return await search_users(
+        result = await search_users(
             self.client, self._access_token, query, limit, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_pins(self, **kwargs) -> tuple[PinSlug | None, list[PinWithDate]]:
@@ -715,9 +754,11 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
         """
-        return await get_pins(
+        result = await get_pins(
             self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def set_pin(
@@ -734,9 +775,11 @@ class AsyncITDClient:
             UnauthorizedError: неверный access токен
             PinNotOwnedError: вы не обладаете этим пином
         """
-        return await set_pin(
+        result = await set_pin(
             self.client, self._access_token, pin_slug, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)  # safe, won't affect enums
+        return result
 
     @auth_required
     async def delete_pin(self, **kwargs) -> None:
@@ -756,9 +799,11 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
         """
-        return await get_privacy(
+        result = await get_privacy(
             self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def update_privacy(
@@ -780,10 +825,12 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
         """
-        return await update_privacy(
+        result = await update_privacy(
             self.client, self._access_token, is_private, likes_visibility, wall_access, show_last_seen,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_profile(self, **kwargs) -> Profile | BannedProfile | NotCreatedProfile:
@@ -792,9 +839,11 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
         """
-        return await get_profile(
+        result = await get_profile(
             self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def update_profile(
@@ -824,10 +873,12 @@ class AsyncITDClient:
         """
         if banner_id is not None:
             banner_id = validate_uuid(banner_id)
-        return await update_profile(
+        result = await update_profile(
             self.client, self._access_token, bio, display_name, username, banner_id,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def delete_banner(self, **kwargs) -> Me:
@@ -836,7 +887,9 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
         """
-        return await delete_banner(self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs)
+        result = await delete_banner(self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs)
+        self._set_client(result)
+        return result
 
     @auth_required
     async def block(
@@ -900,9 +953,11 @@ class AsyncITDClient:
         if page <= 1:
             raise ValueError(f"Минимальная страница 1, передано {page}")
         limit = validate_limit(1, 100, limit)
-        return await get_blocked(
+        result = await get_blocked(
             self.client, self._access_token, page, limit, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_follow_status(
@@ -975,9 +1030,11 @@ class AsyncITDClient:
                 на которого вы не подписаны
         """
         post_id = validate_uuid(post_id)
-        return await get_post(
+        result = await get_post(
             self.client, self._access_token, post_id, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def delete_post(
@@ -1160,10 +1217,12 @@ class AsyncITDClient:
         """
         username_or_id = validate_username_or_uuid(username_or_id)
         limit = validate_limit(1, 50, limit)
-        return await get_posts_by_user(
+        result = await get_posts_by_user(
             self.client, self._access_token, username_or_id, cursor, limit, sort,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_liked_posts(
@@ -1192,10 +1251,12 @@ class AsyncITDClient:
         """
         username_or_id = validate_username_or_uuid(username_or_id)
         limit = validate_limit(1, 50, limit)
-        return await get_posts_by_user_liked(
+        result = await get_posts_by_user_liked(
             self.client, self._access_token, username_or_id, cursor, limit,
             sort, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_wall_posts(
@@ -1224,10 +1285,12 @@ class AsyncITDClient:
         """
         username_or_id = validate_username_or_uuid(username_or_id)
         limit = validate_limit(1, 50, limit)
-        return await get_posts_by_user_wall(
+        result = await get_posts_by_user_wall(
             self.client, self._access_token, username_or_id, cursor, limit,
             sort, self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_posts(
@@ -1251,10 +1314,12 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
         """
         limit = validate_limit(1, 50, limit)
-        return await get_posts(
+        result = await get_posts(
             self.client, self._access_token, cursor, limit, tab,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def get_post_comments(
@@ -1282,10 +1347,12 @@ class AsyncITDClient:
         """
         post_id = validate_uuid(post_id)
         limit = validate_limit(1, 500, limit)
-        return await get_post_comments(
+        result = await get_post_comments(
             self.client, self._access_token, post_id, cursor, limit, sort,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def vote_poll(
@@ -1312,10 +1379,12 @@ class AsyncITDClient:
         """
         post_id = validate_uuid(post_id)
         option_ids = [validate_uuid(oid) for oid in option_ids]
-        return await vote(
+        result = await vote(
             self.client, self._access_token, post_id, option_ids,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def create_post(
@@ -1362,11 +1431,13 @@ class AsyncITDClient:
             attachment_ids = [validate_uuid(aid) for aid in attachment_ids]
         if wall_recipient_id is not None:
             wall_recipient_id = validate_uuid(wall_recipient_id)
-        return await create_post(
+        result = await create_post(
             self.client, self._access_token, content, attachment_ids, wall_recipient_id,
             multiple_choice, question, options, spans,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def update_post(
@@ -1397,10 +1468,12 @@ class AsyncITDClient:
             ParamsValidationError: len(span[i].url) <= 2048
         """
         post_id = validate_uuid(post_id)
-        return await update_post(
+        result = await update_post(
             self.client, self._access_token, post_id, content, spans,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def repost(
@@ -1426,10 +1499,12 @@ class AsyncITDClient:
             ValidationError: len(content) <= 1_000
         """
         post_id = validate_uuid(post_id)
-        return await repost(
+        result = await repost(
             self.client, self._access_token, post_id, content,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def comment(
@@ -1460,10 +1535,12 @@ class AsyncITDClient:
         post_id = validate_uuid(post_id)
         if attachment_ids is not None:
             attachment_ids = [validate_uuid(aid) for aid in attachment_ids]
-        return await comment(
+        result = await comment(
             self.client, self._access_token, post_id, content, attachment_ids,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def replies(
@@ -1498,10 +1575,12 @@ class AsyncITDClient:
             replay_to_user_id = validate_uuid(replay_to_user_id)
         if attachment_ids is not None:
             attachment_ids = [validate_uuid(aid) for aid in attachment_ids]
-        return await replies(
+        result = await replies(
             self.client, self._access_token, comment_id, content, replay_to_user_id, attachment_ids,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def edit_comment(
@@ -1526,10 +1605,12 @@ class AsyncITDClient:
             ParamsValidationError: 1 <= len(content) <= 1_000
         """
         comment_id = validate_uuid(comment_id)
-        return await edit_comment(
+        result = await edit_comment(
             self.client, self._access_token, comment_id, content,
             self.domain, timeout=self.timeout, **kwargs
         )
+        self._set_client(result)
+        return result
 
     @auth_required
     async def delete_comment(
@@ -1655,7 +1736,9 @@ class AsyncITDClient:
             **kwargs
     ) -> list[Version]:
         """Получить чейнджлог."""
-        return await get_changelog(self.client, self.domain, timeout=self.timeout, **kwargs)
+        result = await get_changelog(self.client, self.domain, timeout=self.timeout, **kwargs)
+        self._set_client(result)
+        return result
 
 
 __all__ = ['AsyncITDClient']

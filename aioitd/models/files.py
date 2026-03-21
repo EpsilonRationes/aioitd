@@ -4,10 +4,11 @@ from uuid import UUID
 
 from pydantic import Field
 
-from aioitd.models.base import ITDBaseModel, ITDDatetime
+from aioitd.models.base import ITDDatetime
+from aioitd.objects.files import FileRef
 
 
-class File(ITDBaseModel):
+class File(FileRef):
     id: UUID
     filename: str
     mime_type: Annotated[str, Field(alias='mimeType')]
