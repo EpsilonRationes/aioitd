@@ -1786,6 +1786,14 @@ class AsyncITDClient:
             self.domain, timeout=self.timeout, **kwargs
         )
 
+    async def _add_client_for_notification(
+            self, events: AsyncIterator[ConnectedEvent | NotificationEvent | SSEEvent]
+    ) -> AsyncIterator[ConnectedEvent | NotificationEvent | SSEEvent]:
+        async for event in events:
+            if isinstance(event, NotificationEvent):
+                event.client = self
+            yield event
+
     @asynccontextmanager
     async def connect_notifications(
             self,
@@ -1811,7 +1819,7 @@ class AsyncITDClient:
         async with connect_notifications(
                 self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs
         ) as events:
-            yield events
+            yield self._add_client_for_notification(events)
 
     async def get_changelog(
             self,

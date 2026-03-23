@@ -4,7 +4,7 @@ import pytest
 
 from tests.api import refresh_token
 
-from aioitd import AsyncITDClient, PostRef, UserRef
+from aioitd import AsyncITDClient, PostRef, UserRef, NotificationEvent
 
 
 @pytest.mark.asyncio
@@ -35,8 +35,19 @@ async def test_options_ref():
         comm, post = await client.get_post("758f912e-65fa-4db2-9e68-ce33c70460d7")
         post.poll.options[0]._get_id()
 
+
 @pytest.mark.asyncio
 async def test_client_get():
     async with AsyncITDClient(refresh_token) as client:
         comm, post = await client.get_post("758f912e-65fa-4db2-9e68-ce33c70460d7")
         assert post.author.client is client
+
+
+@pytest.mark.asyncio
+async def test_notifications():
+    async with AsyncITDClient(refresh_token) as client:
+        async with client.connect_notifications() as events:
+            async for event in events:
+                if isinstance(event, NotificationEvent):
+                    assert event.client is client
+                    break
