@@ -27,3 +27,10 @@ async def test_client_objects():
 
         hashtag = client.HashTagRef("8")
         await hashtag.get_posts()
+
+
+@pytest.mark.asyncio
+async def test_options_ref():
+    async with AsyncITDClient(refresh_token) as client:
+        comm, post = await client.get_post("758f912e-65fa-4db2-9e68-ce33c70460d7")
+        post.poll.options[0]._get_id()

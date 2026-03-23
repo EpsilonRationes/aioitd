@@ -7,10 +7,10 @@ from pydantic import Field
 from aioitd.models.base import ITDDatetime, ITDBaseModel
 from aioitd.models.files import Attachment
 from aioitd.models.users import UserWithPin, UserWithAvatar
-from aioitd.objects.posts import PostRef
+from aioitd.objects.posts import PostRef, OptionRef
 
 
-class Option(ITDBaseModel):
+class Option(OptionRef):
     id: UUID
     position: int
     text: str

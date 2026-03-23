@@ -13,6 +13,25 @@ if typing.TYPE_CHECKING:
     from aioitd.api import CommentSort, Reason
 
 
+class OptionRef(ITDBaseModel):
+    id: UUID
+
+    model_config = ConfigDict(
+        **ITDBaseModel.model_config,
+        arbitrary_types_allowed=True
+    )
+
+    def __init__(self, option_id: UUID | str | None = None, client: Optional['AsyncITDClient'] = None, **data):
+        if option_id is not None:
+            identifier = validate_uuid(option_id)
+            data['id'] = identifier
+
+        super().__init__(**data)
+
+    def _get_id(self) -> UUID:
+        return self.id
+
+
 class PostRef(ITDBaseModel):
     id: UUID
     client: Annotated[Optional['AsyncITDClient'], Field(exclude=True)] = None
@@ -266,4 +285,4 @@ class PostRef(ITDBaseModel):
         return await self.client.report(self._get_id(), 'post', reason, description, **kwargs)
 
 
-__all__ = ['PostRef']
+__all__ = ['PostRef', 'OptionRef']

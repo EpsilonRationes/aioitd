@@ -20,5 +20,6 @@ def _rebuild_models():
     _rebuild_model_tree(FileRef)
     _rebuild_model_tree(NotificationRef)
     _rebuild_model_tree(HashtagRef)
+    _rebuild_model_tree(OptionRef)
 
 _rebuild_models()
