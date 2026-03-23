@@ -34,3 +34,9 @@ async def test_options_ref():
     async with AsyncITDClient(refresh_token) as client:
         comm, post = await client.get_post("758f912e-65fa-4db2-9e68-ce33c70460d7")
         post.poll.options[0]._get_id()
+
+@pytest.mark.asyncio
+async def test_client_get():
+    async with AsyncITDClient(refresh_token) as client:
+        comm, post = await client.get_post("758f912e-65fa-4db2-9e68-ce33c70460d7")
+        assert post.author.client is client

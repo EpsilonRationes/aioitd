@@ -92,6 +92,8 @@ class AsyncITDClient:
             await self.close()
 
     def _set_client(self, obj):
+        if obj is self:
+            return
         if hasattr(obj, 'client'):
             obj.client = self
 
@@ -99,8 +101,9 @@ class AsyncITDClient:
             for item in obj:
                 self._set_client(item)
         elif isinstance(obj, ITDBaseModel):
-            for item in obj.model_fields.values():
-                self._set_client(item)
+            for field_name, field_info in obj.model_fields.items():
+                value = getattr(obj, field_name)
+                self._set_client(value)
 
     @property
     def HashTagRef(self) -> Callable[[str], HashtagRef]:
