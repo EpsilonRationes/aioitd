@@ -1,3 +1,3 @@
-::: aioitd.models.notifications
+::: aioitd.objects.users
     options:
       show_root_toc_entry: false

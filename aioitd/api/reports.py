@@ -51,10 +51,10 @@ async def report(
         client: httpx.AsyncClient,
         access_token: str,
         target_id: UUID,
-        target_type: ReportTargetType | Literal[
+        target_type: ReportTargetType | Literal["post", "comment", "user"] = ReportTargetType.USER,
+        reason: Reason | Literal[
             "spam", "violence", "hate", "adult", "misinfo", "other"
-        ] = ReportTargetType.USER,
-        reason: Reason | Literal["post", "comment", "user"] = Reason.OTHER,
+        ] = Reason.OTHER,
         description: str = "",
         domain: str = "xn--d1ah4a.com",
         **kwargs
