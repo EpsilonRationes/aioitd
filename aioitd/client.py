@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
-from functools import wraps, partial
+from functools import wraps
 from typing import IO, TypeVar, ParamSpec, Callable, Awaitable, Literal, AsyncIterator, AsyncGenerator, Union
 import asyncio
 from uuid import UUID
@@ -11,7 +11,6 @@ from aioitd.models import *
 from aioitd.api import *
 from aioitd.fetch import is_token_expired, decode_jwt_payload
 from aioitd.objects import *
-from aioitd import objects
 
 P = ParamSpec("P")
 T = TypeVar("T")
