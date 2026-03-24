@@ -72,7 +72,6 @@ class MyHTMLParser(HTMLParser):
 
     def handle_data(self, data):
         self.result += data
-        print("Data     :", data)
 
 
 class ParseResult(TypedDict):

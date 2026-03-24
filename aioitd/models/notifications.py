@@ -31,7 +31,7 @@ class Notification(NotificationRef):
     id: UUID
     created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
     preview: str | None
-    read: bool
+    is_readed: Annotated[bool, Field(alias='read')]
     actor: Actor
     read_at: Annotated[ITDDatetime | None, Field(alias="readAt")]
     target_id: Annotated[UUID | None, Field(alias="targetId")]

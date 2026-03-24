@@ -233,7 +233,7 @@ class UserRef(ITDBaseModel):
         return await self.client.get_wall_posts(self._get_id(), cursor, limit, sort, **kwargs)
 
     @require_client
-    async def is_following(self, **kwargs) -> bool:
+    async def get_is_following(self, **kwargs) -> bool:
         """Проверить, подписан ли текущий клиент на этого пользователя.
 
         Требуется, чтобы у пользователя был указан `id` (UUID).
