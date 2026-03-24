@@ -6,12 +6,14 @@ from pydantic import ConfigDict, Field
 
 from aioitd.models.base import ITDBaseModel
 from aioitd.objects.base import *
+from aioitd.objects.files import FileRef
 
 if typing.TYPE_CHECKING:
     from aioitd.client import AsyncITDClient
     from aioitd.models import Pagination, PagePagination, Post, UserWithFollowing, FullUser, UserBlockedByMe, \
         UserBlockMe, PrivateUser, Report
     from aioitd.api import PostSort, Reason
+    from aioitd import Monospace, Strike, Underline, Bold, Italic, Spoiler, Link
 
 
 class UserRef(ITDBaseModel):
@@ -277,6 +279,52 @@ class UserRef(ITDBaseModel):
         if isinstance(id, str):
             raise ValueError("Требуется, чтобы у пользователя был указан `id` (UUID).")
         return await self.client.report(id, 'user', reason, description, **kwargs)
+
+    @require_client
+    async def create_post(
+            self,
+            content: str = '',
+            attachment_ids: list[Union[UUID, str, FileRef]] | None = None,
+            multiple_choice: bool = False,
+            question: str | None = None,
+            options: list[str] | None = None,
+            spans: list[Monospace | Strike | Underline | Bold | Italic | Spoiler | Link] | None = None,
+            **kwargs
+    ) -> Post:
+        """Создать пост на стене пользователя.
+
+        Требуется, чтобы у пользователя был указан `id` (UUID).
+
+        Args:
+            content: Текст поста
+            attachment_ids: Прикреплённые файлы (список UUID, можно передавать строки, а также FileRef)
+            multiple_choice: Возможен ли множественный выбор в опросе
+            question: Заголовок опроса
+            options: Варианты ответов (список строк)
+            spans: Форматирование текста (список объектов форматирования)
+
+        Returns:
+            Созданный пост
+
+        Raises:
+            UnauthorizedError: ошибка авторизации
+            ValidationError: Нельзя создать пост content="", attachment_ids=[], question=None
+            ParamsValidationError: len(content) <= 1_000
+            VideoRequiresVerificationError: Загрузка видео доступна только верифицированным пользователям
+            ValidationError: len(attachments_ids) <= 10
+            ForbiddenError: Некоторые файлы из attachment_ids не существуют
+            ParamsValidationError: len(spans) <= 100
+            ValidationError: 1 <= len(question) <= 128
+            ValidationError: 2 <= len(options) <= 10
+            ValidationError: 1 <= len(options[i]) <= 32
+            ParamsValidationError: span[i].offset >= 0
+            ParamsValidationError: span[i].length > 0
+            ParamsValidationError: len(span[i].url) <= 2048
+        """
+        id = self._get_id()
+        if isinstance(id, str):
+            raise ValueError("Требуется, чтобы у пользователя был указан `id` (UUID).")
+        return await self.client.create_post(content, attachment_ids, id, multiple_choice, question, options, spans)
 
 
 __all__ = ['UserRef']
