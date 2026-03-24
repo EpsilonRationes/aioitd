@@ -25,7 +25,7 @@ async def test_client_objects():
         for comment in comments:
             await comment.like()
 
-        hashtag = client.HashTagRef("8")
+        hashtag = client.hashtag_ref("8")
         await hashtag.get_posts()
 
 
