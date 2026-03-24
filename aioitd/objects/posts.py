@@ -22,7 +22,7 @@ class OptionRef(ITDBaseModel):
         arbitrary_types_allowed=True
     )
 
-    def __init__(self, option_id: UUID | str | None = None, client: Optional['AsyncITDClient'] = None, **data):
+    def __init__(self, option_id: UUID | str | None = None, **data):
         if option_id is not None:
             identifier = validate_uuid(option_id)
             data['id'] = identifier
