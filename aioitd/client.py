@@ -105,29 +105,23 @@ class AsyncITDClient:
                 value = getattr(obj, field_name)
                 self._set_client(value)
 
-    @property
-    def hashtag_ref(self) -> Callable[[str], HashtagRef]:
-        return partial(HashtagRef, client=self)
+    def hashtag_ref(self, hashtag_name: str) -> HashtagRef:
+        return HashtagRef(hashtag_name, self)
 
-    @property
-    def file_ref(self) -> Callable[[str], FileRef]:
-        return partial(FileRef, client=self)
+    def file_ref(self, file_id: UUID | str) -> FileRef:
+        return FileRef(file_id, self)
 
-    @property
-    def notification_ref(self) -> Callable[[str], NotificationRef]:
-        return partial(NotificationRef, client=self)
+    def notification_ref(self, notification_id: UUID | str) -> NotificationRef:
+        return NotificationRef(notification_id, self)
 
-    @property
-    def post_ref(self) -> Callable[[str], PostRef]:
-        return partial(PostRef, client=self)
+    def post_ref(self, post_id: UUID | str) -> PostRef:
+        return PostRef(post_id, self)
 
-    @property
-    def comment_ref(self) -> Callable[[str], CommentRef]:
-        return partial(CommentRef, client=self)
+    def comment_ref(self, comment_id: UUID | str) -> CommentRef:
+        return CommentRef(comment_id, self)
 
-    @property
-    def user_ref(self) -> Callable[[str], UserRef]:
-        return partial(UserRef, client=self)
+    def user_ref(self, username_or_id: UUID | str) -> UserRef:
+        return UserRef(username_or_id, self)
 
     async def refresh(self, **kwargs) -> None:
         """Обновить `access_token`

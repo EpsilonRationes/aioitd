@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import ConfigDict, Field
 
 from aioitd.models.base import ITDBaseModel
-from aioitd.objects.base import *
+from aioitd.objects.base import validate_uuid, require_client
 from aioitd.objects.files import FileRef
 
 if typing.TYPE_CHECKING:

@@ -4,7 +4,7 @@ from typing import Optional, Annotated
 from pydantic import ConfigDict, Field
 
 from aioitd.models.base import ITDBaseModel
-from aioitd.objects.base import *
+from aioitd.objects.base import require_client
 
 if typing.TYPE_CHECKING:
     from aioitd.client import AsyncITDClient
