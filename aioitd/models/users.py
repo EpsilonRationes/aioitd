@@ -63,9 +63,45 @@ class Clan(ITDBaseModel):
     member_count: Annotated[int, Field(alias="memberCount")]
 
 
+from enum import Enum
+
+
 class PinSlug(str, Enum):
     KIRILL67_202602_INFECTED = "kirill67_202602_infected"
     KIRILL67_202602_SURVIVOR = "kirill67_202602_survivor"
+
+    PIXELBATTLE_202603_1 = "pixelbattle_202603_1"
+    PIXELBATTLE_202603_2 = "pixelbattle_202603_2"
+    PIXELBATTLE_202603_3 = "pixelbattle_202603_3"
+    PIXELBATTLE_202603_4 = "pixelbattle_202603_4"
+    PIXELBATTLE_202603_5 = "pixelbattle_202603_5"
+    PIXELBATTLE_202603_6 = "pixelbattle_202603_6"
+    PIXELBATTLE_202603_7 = "pixelbattle_202603_7"
+    PIXELBATTLE_202603_8 = "pixelbattle_202603_8"
+    PIXELBATTLE_202603_9 = "pixelbattle_202603_9"
+    PIXELBATTLE_202603_10 = "pixelbattle_202603_10"
+    PIXELBATTLE_202603_11 = "pixelbattle_202603_11"
+    PIXELBATTLE_202603_12 = "pixelbattle_202603_12"
+    PIXELBATTLE_202603_13 = "pixelbattle_202603_13"
+    PIXELBATTLE_202603_14 = "pixelbattle_202603_14"
+    PIXELBATTLE_202603_15 = "pixelbattle_202603_15"
+    PIXELBATTLE_202603_16 = "pixelbattle_202603_16"
+    PIXELBATTLE_202603_17 = "pixelbattle_202603_17"
+    PIXELBATTLE_202603_18 = "pixelbattle_202603_18"
+    PIXELBATTLE_202603_19 = "pixelbattle_202603_19"
+    PIXELBATTLE_202603_20 = "pixelbattle_202603_20"
+    PIXELBATTLE_202603_21 = "pixelbattle_202603_21"
+    PIXELBATTLE_202603_22 = "pixelbattle_202603_22"
+    PIXELBATTLE_202603_23 = "pixelbattle_202603_23"
+    PIXELBATTLE_202603_24 = "pixelbattle_202603_24"
+    PIXELBATTLE_202603_25 = "pixelbattle_202603_25"
+    PIXELBATTLE_202603_26 = "pixelbattle_202603_26"
+    PIXELBATTLE_202603_27 = "pixelbattle_202603_27"
+    PIXELBATTLE_202603_28 = "pixelbattle_202603_28"
+    PIXELBATTLE_202603_29 = "pixelbattle_202603_29"
+    PIXELBATTLE_202603_30 = "pixelbattle_202603_30"
+    PIXELBATTLE_202603_31 = "pixelbattle_202603_31"
+    PIXELBATTLE_202603_32 = "pixelbattle_202603_32"
 
     def __str__(self):
         return self.value
