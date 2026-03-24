@@ -11,6 +11,7 @@ from aioitd.models import *
 from aioitd.api import *
 from aioitd.fetch import is_token_expired, decode_jwt_payload
 from aioitd.objects import *
+from aioitd import objects
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -105,27 +106,27 @@ class AsyncITDClient:
                 self._set_client(value)
 
     @property
-    def HashTagRef(self) -> Callable[[str], HashtagRef]:
+    def hashtag_ref(self) -> Callable[[str], HashtagRef]:
         return partial(HashtagRef, client=self)
 
     @property
-    def FileRef(self) -> Callable[[str], FileRef]:
+    def file_ref(self) -> Callable[[str], FileRef]:
         return partial(FileRef, client=self)
 
     @property
-    def NotificationRef(self) -> Callable[[str], NotificationRef]:
+    def notification_ref(self) -> Callable[[str], NotificationRef]:
         return partial(NotificationRef, client=self)
 
     @property
-    def PostRef(self) -> Callable[[str], PostRef]:
+    def post_ref(self) -> Callable[[str], PostRef]:
         return partial(PostRef, client=self)
 
     @property
-    def CommentRef(self) -> Callable[[str], CommentRef]:
+    def comment_ref(self) -> Callable[[str], CommentRef]:
         return partial(CommentRef, client=self)
 
     @property
-    def UserRef(self) -> Callable[[str], UserRef]:
+    def user_ref(self) -> Callable[[str], UserRef]:
         return partial(UserRef, client=self)
 
     async def refresh(self, **kwargs) -> None:
