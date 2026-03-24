@@ -1,11 +1,12 @@
 import typing
-from typing import Optional, Annotated, Literal
+from typing import Optional, Annotated, Literal, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
 
 from aioitd.models.base import ITDBaseModel
 from aioitd.objects.base import *
+from aioitd.objects.files import FileRef
 
 if typing.TYPE_CHECKING:
     from aioitd.client import AsyncITDClient
@@ -177,11 +178,11 @@ class PostRef(ITDBaseModel):
         return await self.client.get_post_comments(self._get_id(), cursor, limit, sort, **kwargs)
 
     @require_client
-    async def vote(self, option_ids: list[UUID | str], **kwargs) -> 'Poll':
+    async def vote(self, option_ids: list[Union[UUID, str, OptionRef]], **kwargs) -> 'Poll':
         """Проголосовать в опросе.
 
         Args:
-            option_ids: список UUID выбранных вариантов (можно передавать как UUID, так и строки)
+            option_ids: список выбранных вариантов (можно передавать как UUID, строки или OptionRef)
 
         Returns:
             Обновлённый опрос
@@ -193,7 +194,11 @@ class PostRef(ITDBaseModel):
             ValidationError: В этом опросе можно выбрать только один вариант
             ValidationError: len(option_ids) > 0
         """
-        return await self.client.vote_poll(self._get_id(), option_ids, **kwargs)
+        processed_options = [
+            opt._get_id() if isinstance(opt, OptionRef) else opt
+            for opt in option_ids
+        ]
+        return await self.client.vote_poll(self._get_id(), processed_options, **kwargs)
 
     @require_client
     async def update(self, content: str, spans: list = None, **kwargs) -> 'UpdatePostResponse':
@@ -238,12 +243,17 @@ class PostRef(ITDBaseModel):
         return await self.client.repost(self._get_id(), content, **kwargs)
 
     @require_client
-    async def comment(self, content: str = "", attachment_ids: list[UUID | str] | None = None, **kwargs) -> 'Comment':
+    async def comment(
+            self,
+            content: str = "",
+            attachment_ids: Union[list[Union[UUID, str, FileRef]], None] = None,
+            **kwargs
+    ) -> 'Comment':
         """Создать комментарий к посту.
 
         Args:
             content: текст комментария
-            attachment_ids: список UUID прикреплённых файлов (максимум 4)
+            attachment_ids: список прикреплённых файлов (можно передавать как UUID, строки или FileRef) (максимум 4)
 
         Returns:
             Созданный комментарий
@@ -256,6 +266,11 @@ class PostRef(ITDBaseModel):
             ParamsValidationError: len(attachment_ids) <= 4
             ParamsValidationError: len(content) <= 1_000
         """
+        if attachment_ids is not None:
+            attachment_ids = [
+                aid._get_id() if isinstance(aid, FileRef) else aid
+                for aid in attachment_ids
+            ]
         return await self.client.comment(self._get_id(), content, attachment_ids, **kwargs)
 
     @require_client
@@ -280,7 +295,7 @@ class PostRef(ITDBaseModel):
             UnauthorizedError: ошибка авторизации
             ValidationError: не найден пост, пользователь или комментарий по target_id
             ValidationError: нельзя отправить жалобу на один и тот же контент
-            PramsValidationError: len(description) <= 1000
+            ParamsValidationError: len(description) <= 1000
         """
         return await self.client.report(self._get_id(), 'post', reason, description, **kwargs)
 

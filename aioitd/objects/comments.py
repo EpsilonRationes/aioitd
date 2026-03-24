@@ -1,11 +1,14 @@
 import typing
-from typing import Optional, Annotated, Literal
+from typing import Optional, Annotated, Literal, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
 
 from aioitd.models.base import ITDBaseModel
 from aioitd.objects.base import *
+from aioitd.objects.users import UserRef
+from aioitd.objects.files import FileRef
+
 
 if typing.TYPE_CHECKING:
     from aioitd.client import AsyncITDClient
@@ -104,16 +107,16 @@ class CommentRef(ITDBaseModel):
     async def reply(
             self,
             content: str = "",
-            replay_to_user_id: UUID | str | None = None,
-            attachment_ids: list[UUID | str] | None = None,
+            replay_to_user_id: Union[UUID, str, UserRef, None] = None,
+            attachment_ids: Union[list[Union[UUID, str, FileRef]], None] = None,
             **kwargs
     ) -> 'Reply':
         """Ответить на этот комментарий.
 
         Args:
             content: текст ответа
-            replay_to_user_id: UUID пользователя, которому адресован ответ (для упоминания)
-            attachment_ids: список UUID прикреплённых файлов (максимум 4)
+            replay_to_user_id: пользователь, которому адресован ответ (можно передать UserRef)
+            attachment_ids: список прикреплённых файлов (можно передать FileRef)
 
         Returns:
             Созданный ответ
@@ -126,7 +129,22 @@ class CommentRef(ITDBaseModel):
             ParamsValidationError: len(attachment_ids) <= 4
             ParamsValidationError: len(content) <= 1_000
         """
-        return await self.client.replies(self._get_id(), content, replay_to_user_id, attachment_ids, **kwargs)
+        if replay_to_user_id is not None:
+            if isinstance(replay_to_user_id, UserRef):
+                replay_to_user_id = replay_to_user_id._get_id()
+
+        if attachment_ids is not None:
+            attachment_ids = [
+                aid._get_id() if isinstance(aid, FileRef) else aid
+                for aid in attachment_ids
+            ]
+        return await self.client.replies(
+            self._get_id(),
+            content,
+            replay_to_user_id,
+            attachment_ids,
+            **kwargs
+        )
 
     @require_client
     async def report(
@@ -136,7 +154,7 @@ class CommentRef(ITDBaseModel):
             ] = "other",
             description: str = "",
             **kwargs
-    ) -> Report:
+    ) -> 'Report':
         """Написать донос на комментарий.
 
         Args:
@@ -150,7 +168,7 @@ class CommentRef(ITDBaseModel):
             UnauthorizedError: ошибка авторизации
             ValidationError: не найден пост, пользователь или комментарий по target_id
             ValidationError: нельзя отправить жалобу на один и тот же контент
-            PramsValidationError: len(description) <= 1000
+            ParamsValidationError: len(description) <= 1000
         """
         return await self.client.report(self._get_id(), 'comment', reason, description, **kwargs)
 
