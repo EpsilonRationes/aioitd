@@ -3,7 +3,8 @@ from uuid import UUID
 
 import httpx
 
-from aioitd import datetime_from_itd_format, DeletedMe, BannedProfile, NotCreatedProfile, validate_pin_with_date_or_none
+from aioitd import datetime_from_itd_format, DeletedMe, BannedProfile, NotCreatedProfile, \
+    validate_pin_with_date_or_none, CreateUserResponse
 from aioitd.fetch import get, add_bearer, post, delete, put
 from aioitd.models.users import BlockedAuthor, FullUser, UserBlockedByMe, Me, PinWithDate, UserBlockMe, PrivateUser, \
     FullMe, PinSlug, UserWithFollowing, Clan, Privacy, Profile, Visibility, UserWithFollowersCount, PinSlug
@@ -510,6 +511,48 @@ async def get_profile(
     return Profile(**data)
 
 
+async def create_profile(
+        client: httpx.AsyncClient,
+        access_token: str,
+        avatar: str,
+        display_name: str,
+        username: str,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> CreateUserResponse:
+    """Создать профиль
+
+    Args:
+        client: httpx.AsyncClient
+        avatar: эмоджи профиля
+        display_name: имя
+        username: имя пользователя
+        access_token: access токен
+        domain: домен
+
+    Raises:
+        UnauthorizedError: неверный access токен
+
+        InvalidAAvatarError: Неправильный эмоджи
+        UsernameTakenError: имя пользователя занято
+        ParamsValidationError: Неправильное имя пользователя
+
+    """
+    response = await post(
+        client,
+        f"https://{domain}/api/users/profile",
+        json={
+            "avatar": avatar,
+            "displayName": display_name,
+            "username": username
+        },
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
+    )
+    data = response.json()
+    return CreateUserResponse(**data)
+
+
 async def update_profile(
         client: httpx.AsyncClient,
         access_token: str,
@@ -804,5 +847,5 @@ __all__ = [
     'get_user', 'get_me', 'follow', 'unfollow', 'get_followers', 'get_following', 'get_top_clans', 'get_who_to_follow',
     'search_users', 'get_pins', 'set_pin', 'delete_pin', 'get_privacy', 'update_privacy', 'get_profile',
     'update_profile', 'block', 'unblock', 'get_blocked', 'get_follow_status', 'delete_banner', 'delete_account',
-    'restore_account', 'check_username'
+    'restore_account', 'check_username', 'create_profile'
 ]

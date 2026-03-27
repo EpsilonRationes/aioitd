@@ -216,6 +216,10 @@ class InvalidInputError(ITDError):
     code = "INVALID_INPUT"
 
 
+class InvalidAAvatarError(ITDError):
+    code = "INVALID_AVATAR"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -247,7 +251,8 @@ itd_exceptions = [
     NotDeletedError,
     AccountBannedError,
     ProfileNotFoundError,
-    InvalidInputError
+    InvalidInputError,
+    InvalidAAvatarError
 ]
 
 itd_codes = {}
@@ -291,5 +296,6 @@ __all__ = [
     "ProfileNotFoundError",
     "itd_codes",
     "SSEError",
-    "InvalidInputError"
+    "InvalidInputError",
+    "InvalidAAvatarError"
 ]

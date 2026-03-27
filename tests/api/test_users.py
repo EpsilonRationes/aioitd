@@ -4,7 +4,8 @@ import pytest
 from uuid import uuid8, UUID
 
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError, \
-    UserBlockedError, ConflictError, PinNotOwnedError, UsernameTakenError, UsernameTakenError, InvalidInputError
+    UserBlockedError, ConflictError, PinNotOwnedError, UsernameTakenError, UsernameTakenError, InvalidInputError, \
+    InvalidAAvatarError
 from aioitd.api import check_username
 from aioitd.models.users import PinSlug
 from tests.api import client, access_token
@@ -12,7 +13,7 @@ from tests.api import client, access_token
 from aioitd.models.users import FullUser, UserBlockedByMe, PrivateUser, UserBlockMe, Visibility
 from aioitd.api.users import get_user, block, unblock, unfollow, follow, get_me, get_followers, get_following, \
     get_top_clans, get_who_to_follow, search_users, get_pins, set_pin, delete_pin, get_privacy, update_privacy, \
-    get_profile, get_blocked, update_profile, get_follow_status
+    get_profile, get_blocked, update_profile, get_follow_status, create_profile
 
 blocked_user = "zzzuuuk"
 private_username = 'infection'
@@ -276,6 +277,22 @@ async def test_get_profile(client, access_token):
     await get_profile(client, '123')
 
     await get_profile(client, access_token)
+
+
+@pytest.mark.asyncio
+async def test_create_profile(client, access_token):
+    with pytest.raises(UnauthorizedError):
+        await create_profile(client, '123', '1', '1', '123')
+    with pytest.raises(InvalidAAvatarError):
+        await create_profile(client, access_token, '1', '123', 'nowkie')
+    with pytest.raises(UsernameTakenError):
+        await create_profile(client, access_token, '✅', '123', 'nowkie')
+    with pytest.raises(ParamsValidationError):
+        await create_profile(client, access_token, '✅', 'FIRST_TM', '!FIRST_TM')
+    with pytest.raises(ParamsValidationError):
+        await create_profile(client, access_token, '✅', '', '!FIRST_TM')
+    me = await get_me(client, access_token)
+    await create_profile(client, access_token, '✅', 'FIRST_TM', me.username)
 
 
 @pytest.mark.asyncio

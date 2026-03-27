@@ -181,6 +181,10 @@ class UserWithFollowing(UserWithVerified):
     is_following: Annotated[bool, Field(alias="isFollowing")]
 
 
+class CreateUserResponse(UserWithAvatar):
+    created_at: Annotated[ITDDatetime, Field(alias="createdAt")]
+
+
 class BlockedAuthor(UserWithVerified):
     blocked_at: Annotated[ITDDatetime, Field(alias="blockedAt")]
 
@@ -246,5 +250,5 @@ __all__ = [
     'PinWithDate', 'Privacy', 'PrivateUser', 'Profile', 'User', 'UserBlockedByMe', 'UserBlockMe', 'UserStab',
     'UserWithAvatar', 'UserWithFollowersCount', 'UserWithFollowing', 'UserWithPin', 'UserWithRoles', 'UserWithVerified',
     'Visibility', 'LastSeenUnit', 'DeletedMe', 'BannedProfile', 'NotCreatedProfile', 'validate_pin_or_none',
-    'validate_pin_with_date_or_none'
+    'validate_pin_with_date_or_none', 'CreateUserResponse'
 ]
