@@ -771,9 +771,38 @@ async def restore_account(
     return data['restored']
 
 
+async def check_username(
+        client: httpx.AsyncClient,
+        username: str,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> bool:
+    """Не зянято ли это имя
+
+    Args:
+        client: httpx.AsyncClient
+        username: имя пользовтеля
+        domain: домен
+
+    Raises:
+        InvalidInputError: len(username) >= 1
+
+    Returns:
+        Не зянято ли это имя
+    """
+    response = await get(
+        client,
+        f"https://{domain}/api/users/check-username",
+        params={'username': username},
+        **kwargs
+    )
+    data = response.json()
+    return data['available']
+
+
 __all__ = [
     'get_user', 'get_me', 'follow', 'unfollow', 'get_followers', 'get_following', 'get_top_clans', 'get_who_to_follow',
     'search_users', 'get_pins', 'set_pin', 'delete_pin', 'get_privacy', 'update_privacy', 'get_profile',
     'update_profile', 'block', 'unblock', 'get_blocked', 'get_follow_status', 'delete_banner', 'delete_account',
-    'restore_account'
+    'restore_account', 'check_username'
 ]

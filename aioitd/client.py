@@ -1033,6 +1033,24 @@ class AsyncITDClient:
         """
         return await restore_account(self.client, self._access_token, self.domain, timeout=self.timeout, **kwargs)
 
+    async def check_username(
+            self,
+            username: str,
+            **kwargs
+    ) -> bool:
+        """Не зянято ли это имя
+
+        Args:
+            username: имя пользовтеля
+
+        Raises:
+            InvalidInputError: len(username) >= 1
+
+        Returns:
+            Не зянято ли это имя
+        """
+        return await check_username(self.client, username, self.domain, timeout=self.timeout, **kwargs)
+
     @auth_required
     async def get_post(
             self,

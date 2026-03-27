@@ -4,7 +4,8 @@ import pytest
 from uuid import uuid8, UUID
 
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError, \
-    UserBlockedError, ConflictError, PinNotOwnedError, UsernameTakenError, UsernameTakenError
+    UserBlockedError, ConflictError, PinNotOwnedError, UsernameTakenError, UsernameTakenError, InvalidInputError
+from aioitd.api import check_username
 from aioitd.models.users import PinSlug
 from tests.api import client, access_token
 
@@ -271,7 +272,7 @@ async def test_update_privacy(client, access_token):
 
 @pytest.mark.asyncio
 async def test_get_profile(client, access_token):
-    #with pytest.raises(UnauthorizedError):
+    # with pytest.raises(UnauthorizedError):
     await get_profile(client, '123')
 
     await get_profile(client, access_token)
@@ -372,10 +373,18 @@ async def test_get_follow_status(client, access_token):
     with pytest.raises(UnauthorizedError):
         await get_follow_status(client, '123', [''])
 
-    await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad",  uuid8(), uuid8()])
+    await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad", uuid8(), uuid8()])
 
     await get_follow_status(client, access_token, [])
 
     await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad"] * 20)
     with pytest.raises(ParamsValidationError):
-        await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad"]*21)
+        await get_follow_status(client, access_token, ["5ee59a22-ae5a-49f9-9090-5a72e6285fad"] * 21)
+
+
+@pytest.mark.asyncio
+async def test_chech_username(client, access_token):
+    await check_username(client, 'nowkie')
+    await check_username(client, '!')
+    with pytest.raises(InvalidInputError):
+        await check_username(client, '')
