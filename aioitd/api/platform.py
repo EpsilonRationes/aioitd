@@ -25,4 +25,28 @@ async def get_changelog(
     return list(map(Version.model_validate, data))
 
 
-__all__ = ['get_changelog']
+async def get_portal(
+        client: httpx.AsyncClient,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> bool:
+    """Активен ли портал
+
+    Args:
+        client: httpx.AsyncClient
+        domain: домен
+
+    Returns:
+        Активен ли портал
+
+    """
+    response = await get(
+        client,
+        f"https://{domain}/api/v1/portal",
+        **kwargs
+    )
+    data = response.json()
+    return data['active']
+
+
+__all__ = ['get_changelog', 'get_portal']

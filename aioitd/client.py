@@ -1842,5 +1842,12 @@ class AsyncITDClient:
         self._set_client(result)
         return result
 
+    async def get_portal(
+            self,
+            **kwargs
+    ) -> bool:
+        """Активен ли портал."""
+        return await get_portal(self.client, self.domain, timeout=self.timeout, **kwargs)
+
 
 __all__ = ['AsyncITDClient']
