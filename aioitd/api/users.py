@@ -580,6 +580,7 @@ async def update_profile(
         ForbiddenError: На баннер можно поставить только свой файл
         ValidationError: Баннер может быть только изображением
         UsernameTakenError: Имя пользователя уже занято
+        GIFRequiresVerificationError: Только верефицированные пользователи могут поставить гифку на баннер
     """
     json = {}
     if bio is not None:

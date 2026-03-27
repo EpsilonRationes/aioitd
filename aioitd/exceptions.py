@@ -220,6 +220,9 @@ class InvalidAAvatarError(ITDError):
     code = "INVALID_AVATAR"
 
 
+class GIFRequiresVerificationError(ITDError):
+    code = "GIF_REQUIRES_VERIFICATION"
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -252,7 +255,8 @@ itd_exceptions = [
     AccountBannedError,
     ProfileNotFoundError,
     InvalidInputError,
-    InvalidAAvatarError
+    InvalidAAvatarError,
+    GIFRequiresVerificationError
 ]
 
 itd_codes = {}
@@ -297,5 +301,6 @@ __all__ = [
     "itd_codes",
     "SSEError",
     "InvalidInputError",
-    "InvalidAAvatarError"
+    "InvalidAAvatarError",
+    "GIFRequiresVerificationError"
 ]

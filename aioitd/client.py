@@ -887,6 +887,7 @@ class AsyncITDClient:
             ForbiddenError: На баннер можно поставить только свой файл
             ValidationError: Баннер может быть только изображением
             UsernameTakenError: Имя пользователя уже занято
+            GIFRequiresVerificationError: Только верефицированные пользователи могут поставить гифку на баннер
         """
         if banner_id is not None:
             if isinstance(banner_id, FileRef):
