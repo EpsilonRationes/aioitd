@@ -45,12 +45,15 @@ class ITDError(Exception):
         'Account is already deleted': 'Аккаунт уже удалён',
         'Your account has been deleted. You can restore it within 30 days.': "Ваш аккаунт удалён, вы может восстановить его в течении 30 денй",
         'Account is not deleted': 'Аккаунт удалён',
-        'Your account has been deactivated': "Аккаунт забанен"
+        'Your account has been deactivated': "Аккаунт забанен",
+        'Username is required': "Необходимо передать имя пользователя"
     }
     code = "UNCNOWN"
 
     def __init__(self, code: str | None = None, message: str = "", response: Response | None = None):
         if len(message) == 0 and hasattr(self, 'message'):
+            self.message = message
+        else:
             self.message = message
         if code is not None:
             self.code = code
@@ -209,6 +212,10 @@ class ProfileNotFoundError(ITDError):
     code = "PROFILE_NOT_FOUND"
 
 
+class InvalidInputError(ITDError):
+    code = "INVALID_INPUT"
+
+
 itd_exceptions = [
     TokenNotFoundError,
     TokenRevokedError,
@@ -239,7 +246,8 @@ itd_exceptions = [
     AccountDeletedError,
     NotDeletedError,
     AccountBannedError,
-    ProfileNotFoundError
+    ProfileNotFoundError,
+    InvalidInputError
 ]
 
 itd_codes = {}
@@ -282,5 +290,6 @@ __all__ = [
     "AccountBannedError",
     "ProfileNotFoundError",
     "itd_codes",
-    "SSEError"
+    "SSEError",
+    "InvalidInputError"
 ]
