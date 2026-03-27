@@ -900,6 +900,32 @@ class AsyncITDClient:
         return result
 
     @auth_required
+    async def create_profile(
+            self,
+            avatar: str,
+            display_name: str,
+            username: str,
+            **kwargs
+    ) -> CreateUserResponse:
+        """Создать профиль
+
+        Args:
+            avatar: эмоджи профиля
+            display_name: имя
+            username: имя пользователя
+
+        Raises:
+            UnauthorizedError: неверный access токен
+            InvalidAAvatarError: Неправильный эмоджи
+            UsernameTakenError: имя пользователя занято
+            ParamsValidationError: Неправильное имя пользователя
+        """
+        result = await create_profile(self.client, self._access_token, avatar, display_name, username, self.domain,
+                                      timeout=self.timeout, **kwargs)
+        self._set_client(result)
+        return result
+
+    @auth_required
     async def delete_banner(self, **kwargs) -> Me:
         """Удалить баннер.
 

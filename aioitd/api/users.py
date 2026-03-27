@@ -524,19 +524,17 @@ async def create_profile(
 
     Args:
         client: httpx.AsyncClient
+        access_token: access токен
         avatar: эмоджи профиля
         display_name: имя
         username: имя пользователя
-        access_token: access токен
         domain: домен
 
     Raises:
         UnauthorizedError: неверный access токен
-
         InvalidAAvatarError: Неправильный эмоджи
         UsernameTakenError: имя пользователя занято
         ParamsValidationError: Неправильное имя пользователя
-
     """
     response = await post(
         client,
