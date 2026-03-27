@@ -9,10 +9,9 @@ from aioitd.objects.base import require_client, validate_uuid
 from aioitd.objects.users import UserRef
 from aioitd.objects.files import FileRef
 
-
 if typing.TYPE_CHECKING:
     from aioitd.client import AsyncITDClient
-    from aioitd.models import Report, UpdateCommentResponse, Reply
+    from aioitd.models import Report, UpdateCommentResponse, Reply, PagePagination
     from aioitd.api import Reason
 
 
@@ -171,6 +170,28 @@ class CommentRef(ITDBaseModel):
             ParamsValidationError: len(description) <= 1000
         """
         return await self.client.report(self._get_id(), 'comment', reason, description, **kwargs)
+
+    @require_client
+    async def get_comment_replies(
+            self,
+            limit: int = 100,
+            page: int = 1,
+            **kwargs
+    ) -> tuple[PagePagination, list[Reply]]:
+        """Получить ответы на комментарий.
+
+        Args:
+            limit: максимальное количество ответов на странице (1 <= limit <= 100)
+            page: номер страницы (page >= 1)
+
+        Returns:
+            Ответы на комментарий
+
+        Raises:
+            UnauthorizedError: ошибка авторизации
+            NotFoundError: комментарий не найден
+        """
+        return await self.client.get_comment_replies(self._get_id(), limit, page, **kwargs)
 
 
 __all__ = ['CommentRef']

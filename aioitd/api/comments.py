@@ -2,8 +2,10 @@ from uuid import UUID
 
 import httpx
 
-from aioitd.fetch import add_bearer, delete, post, patch
+from aioitd import PagePagination
+from aioitd.fetch import add_bearer, delete, post, patch, get
 from aioitd.models.comments import Reply, Comment, UpdateCommentResponse
+from aioitd.models.base import TotalPagination
 
 
 async def comment(
@@ -370,6 +372,53 @@ async def unlike_comment(
     return data["likesCount"]
 
 
+async def get_comment_replies(
+        client: httpx.AsyncClient,
+        access_token: str,
+        comment_id: UUID,
+        limit: int = 100,
+        page: int = 1,
+        domain: str = "xn--d1ah4a.com",
+        **kwargs
+) -> tuple[PagePagination, list[Reply]]:
+    """Получить ответы на комментарий.
+
+    Args:
+        client: httpx.AsyncClient
+        access_token: access токен
+        comment_id: UUID комментария
+        limit: максимальное количество ответов на странице
+        page: номер страницы
+        domain: домен
+
+    Returns:
+        Ответы на комментарий
+
+    Raises:
+        UnauthorizedError: ошибка авторизации
+        NotFoundError: комментарий не найден
+        ParamsValidationError: 1 <= limit <= 100
+        ParamsValidationError: page >= 1
+
+    """
+    response = await get(
+        client,
+        f"https://{domain}/api/comments/{comment_id}/replies",
+        params={'page': page, 'limit': limit},
+        headers={"authorization": add_bearer(access_token)},
+        **kwargs
+    )
+    data = response.json()['data']
+    for replie in data['replies']:
+        replie['replies'] = []
+        replie['repliesCount'] = 0
+    pagination = PagePagination(**data['pagination'])
+    replies = list(map(Reply.model_validate, data['replies']))
+
+    return pagination, replies
+
+
 __all__ = [
-    "delete_comment", "like_comment", "unlike_comment", "comment", "edit_comment", "replies", "restore_comment"
+    "delete_comment", "like_comment", "unlike_comment", "comment", "edit_comment", "replies", "restore_comment",
+    'get_comment_replies'
 ]

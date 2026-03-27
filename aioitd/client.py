@@ -1824,6 +1824,38 @@ class AsyncITDClient:
             self.domain, timeout=self.timeout, **kwargs
         )
 
+    @auth_required
+    async def get_comment_replies(
+            self,
+            comment_id: UUID | str | CommentRef,
+            limit: int = 100,
+            page: int = 1,
+            **kwargs
+    ) -> tuple[PagePagination, list[Reply]]:
+        """Получить ответы на комментарий.
+
+        Args:
+            comment_id: UUID комментария
+            limit: максимальное количество ответов на странице (1 <= limit <= 100)
+            page: номер страницы (page >= 1)
+
+        Returns:
+            Ответы на комментарий
+
+        Raises:
+            UnauthorizedError: ошибка авторизации
+            NotFoundError: комментарий не найден
+        """
+        if page <= 1:
+            raise ValueError(f"Минимальная страница 1, передано {page}")
+        if isinstance(comment_id, CommentRef):
+            comment_id = comment_id._get_id()
+        comment_id = validate_uuid(comment_id)
+        result = await get_comment_replies(self.client, self._access_token, comment_id, limit, page, self.domain,
+                                           timeout=self.timeout, **kwargs)
+        self._set_client(result)
+        return result
+
     async def _add_client_for_notification(
             self, events: AsyncIterator[ConnectedEvent | NotificationEvent | SSEEvent]
     ) -> AsyncIterator[ConnectedEvent | NotificationEvent | SSEEvent]:

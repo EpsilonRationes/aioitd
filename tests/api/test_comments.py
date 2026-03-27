@@ -4,6 +4,7 @@ import pytest
 from uuid import uuid8, UUID
 
 from aioitd import UnauthorizedError, NotFoundError, ValidationError, ParamsValidationError, ITDError, ForbiddenError
+from aioitd.api import get_comment_replies
 from tests.api import client, access_token
 
 from aioitd.api.comments import comment, replies, like_comment, unlike_comment, restore_comment, delete_comment, \
@@ -143,3 +144,27 @@ async def test_update_comment(client, access_token):
 
     with pytest.raises(ForbiddenError):
         await edit_comment(client, access_token, not_me_comment_id, content='1')
+
+
+comment_id = UUID("6eeac53d-78b7-47f9-8d4c-5926e2f3cd24")
+
+
+@pytest.mark.asyncio
+async def test_get_comment_replies(client, access_token):
+    with pytest.raises(UnauthorizedError):
+        await get_comment_replies(client, '123', comment_id)
+    await get_comment_replies(client, access_token, comment_id)
+
+    with pytest.raises(ParamsValidationError):
+        await get_comment_replies(client, access_token, comment_id, limit=0)
+
+    await get_comment_replies(client, access_token, comment_id, limit=100)
+
+    with pytest.raises(ParamsValidationError):
+        await get_comment_replies(client, access_token, comment_id, limit=101)
+
+    with pytest.raises(ParamsValidationError):
+        await  get_comment_replies(client, access_token, comment_id, page=0)
+
+    with pytest.raises(NotFoundError):
+        await get_comment_replies(client, access_token, uuid8())
