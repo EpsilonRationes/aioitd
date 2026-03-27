@@ -662,7 +662,7 @@ async def update_post(
 async def repost(
         client: httpx.AsyncClient,
         access_token: str,
-        post_id: UUID | str,
+        post_id: UUID,
         content: str = "",
         domain: str = "xn--d1ah4a.com",
         **kwargs
