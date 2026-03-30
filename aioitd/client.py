@@ -668,7 +668,7 @@ class AsyncITDClient:
             NotFoundError: Пользователь не найден
             UserBlockedError: пользователь заблокирован
         """
-        if page <= 1:
+        if page < 1:
             raise ValueError(f"Минимальная страница 1, передано {page}")
         if isinstance(username_or_id, UserRef):
             username_or_id = username_or_id._get_id()
@@ -700,7 +700,7 @@ class AsyncITDClient:
             NotFoundError: Пользователь не найден
             UserBlockedError: пользователь заблокирован
         """
-        if page <= 1:
+        if page < 1:
             raise ValueError(f"Минимальная страница 1, передано {page}")
         if isinstance(username_or_id, UserRef):
             username_or_id = username_or_id._get_id()
@@ -1000,7 +1000,7 @@ class AsyncITDClient:
         Raises:
             UnauthorizedError: неверный access токен
         """
-        if page <= 1:
+        if page < 1:
             raise ValueError(f"Минимальная страница 1, передано {page}")
         limit = validate_limit(1, 100, limit)
         result = await get_blocked(
@@ -1847,7 +1847,7 @@ class AsyncITDClient:
             UnauthorizedError: ошибка авторизации
             NotFoundError: комментарий не найден
         """
-        if page <= 1:
+        if page < 1:
             raise ValueError(f"Минимальная страница 1, передано {page}")
         if isinstance(comment_id, CommentRef):
             comment_id = comment_id._get_id()
