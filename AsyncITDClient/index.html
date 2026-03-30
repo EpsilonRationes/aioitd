@@ -1292,6 +1292,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#aioitd.AsyncITDClient.get_comment_replies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_comment_replies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#aioitd.AsyncITDClient.connect_notifications" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3375,6 +3386,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unlike_comment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aioitd.AsyncITDClient.get_comment_replies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_comment_replies
       
     </span>
   </a>
@@ -7526,6 +7548,18 @@
             <td class="doc-raises-details">
               <div class="doc-md-description">
                 <p>Имя пользователя уже занято</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.GIFRequiresVerificationError">GIFRequiresVerificationError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>Только верефицированные пользователи могут поставить гифку на баннер</p>
               </div>
             </td>
           </tr>
@@ -11953,6 +11987,159 @@ AccountDeletedError, кроме get_me и get_me_uuid</p>
             <td class="doc-returns-details">
               <div class="doc-md-description">
                 <p>Обновлённое количество лайков</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<table>
+      <thead>
+        <tr>
+          <th><span class="doc-section-title">RAISES</span></th>
+          <th><span>DESCRIPTION</span></th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.UnauthorizedError">UnauthorizedError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>ошибка авторизации</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+              <span class="doc-raises-annotation">
+                  <code><span title="aioitd.exceptions.NotFoundError">NotFoundError</span></code>
+              </span>
+            </td>
+            <td class="doc-raises-details">
+              <div class="doc-md-description">
+                <p>комментарий не найден</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="aioitd.AsyncITDClient.get_comment_replies" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_comment_replies</span>
+
+
+<a href="#aioitd.AsyncITDClient.get_comment_replies" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_comment_replies</span><span class="p">(</span>
+    <span class="n">comment_id</span><span class="p">:</span> <span class="n"><span title="uuid.UUID">UUID</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            CommentRef (aioitd.objects.CommentRef)" href="../objects/comments/#aioitd.objects.comments.CommentRef">CommentRef</a></span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="n">page</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            PagePagination (aioitd.models.PagePagination)" href="../models/base/#aioitd.models.base.PagePagination">PagePagination</a></span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Reply (aioitd.models.Reply)" href="../models/comments/#aioitd.models.comments.Reply">Reply</a></span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Получить ответы на комментарий.</p>
+
+
+<table>
+      <thead>
+        <tr>
+          <th><span class="doc-section-title">PARAMETER</span></th>
+          <th><span>DESCRIPTION</span></th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>comment_id</code>
+            </td>
+            <td class="doc-param-details">
+              <div class="doc-md-description">
+                <p>UUID комментария</p>
+              </div>
+              <p>
+                  <span class="doc-param-annotation">
+                    <b>TYPE:</b>
+                      <code><span title="uuid.UUID">UUID</span> | <span title="str">str</span> | <a class="autorefs autorefs-internal" title="            CommentRef (aioitd.objects.CommentRef)" href="../objects/comments/#aioitd.objects.comments.CommentRef">CommentRef</a></code>
+                  </span>
+              </p>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td class="doc-param-details">
+              <div class="doc-md-description">
+                <p>максимальное количество ответов на странице (1 &lt;= limit &lt;= 100)</p>
+              </div>
+              <p>
+                  <span class="doc-param-annotation">
+                    <b>TYPE:</b>
+                      <code><span title="int">int</span></code>
+                  </span>
+                  <span class="doc-param-default">
+                    <b>DEFAULT:</b>
+                      <code>100</code>
+                  </span>
+              </p>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>page</code>
+            </td>
+            <td class="doc-param-details">
+              <div class="doc-md-description">
+                <p>номер страницы (page &gt;= 1)</p>
+              </div>
+              <p>
+                  <span class="doc-param-annotation">
+                    <b>TYPE:</b>
+                      <code><span title="int">int</span></code>
+                  </span>
+                  <span class="doc-param-default">
+                    <b>DEFAULT:</b>
+                      <code>1</code>
+                  </span>
+              </p>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<table>
+      <thead>
+        <tr>
+          <th><span class="doc-section-title">RETURNS</span></th>
+          <th><span>DESCRIPTION</span></th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <span class="doc-returns-annotation">
+                    <code><span title="tuple">tuple</span>[<a class="autorefs autorefs-internal" title="            PagePagination (aioitd.models.PagePagination)" href="../models/base/#aioitd.models.base.PagePagination">PagePagination</a>, <span title="list">list</span>[<a class="autorefs autorefs-internal" title="            Reply (aioitd.models.Reply)" href="../models/comments/#aioitd.models.comments.Reply">Reply</a>]]</code>
+                </span>
+            </td>
+            <td class="doc-returns-details">
+              <div class="doc-md-description">
+                <p>Ответы на комментарий</p>
               </div>
             </td>
           </tr>
