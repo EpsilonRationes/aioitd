@@ -27,7 +27,7 @@ ITDDatetime = Annotated[
 
 class ITDBaseModel(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        # extra='ignore',
         json_encoders={
             datetime: datetime_to_itd_format
         }
