@@ -1,5 +1,8 @@
 # aioitd
 
+> [!WARNING]
+> **Эта библиотека больше не поддерживается.**  
+
 Асинхронный Python клиент для итд.com
 
 документация: https://EpsilonRationes.github.io/aioitd/
